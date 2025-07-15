@@ -8,8 +8,8 @@ class X1Explorer {
         this.bindEvents();
         this.loadTPS();
         
-        // Update TPS every 15 seconds
-        setInterval(() => this.loadTPS(), 15000);
+        // Update TPS every 30 seconds (since performance samples are taken every 60 seconds)
+        setInterval(() => this.loadTPS(), 30000);
     }
 
     bindEvents() {
@@ -221,18 +221,8 @@ class X1Explorer {
 
     async loadTPS() {
         try {
-            this.showTPSLoading();
-            
-            let tpsData;
-            try {
-                // Try to get TPS from latest two blocks
-                tpsData = await rpc.getLatestBlockTPS();
-            } catch (error) {
-                console.log('Failed to get latest block TPS, using estimated TPS:', error.message);
-                // Fallback to estimated TPS
-                tpsData = await rpc.getEstimatedTPS();
-            }
-            
+            // No loading animation - directly get and update TPS data
+            const tpsData = await rpc.getAllTPS();
             this.tpsData = tpsData;
             this.displayTPS(tpsData);
         } catch (error) {
@@ -246,28 +236,47 @@ class X1Explorer {
         
         if (tpsData.error) {
             tpsContainer.innerHTML = `
-                <div class="tps-error">
-                    <span class="tps-label">TPS:</span>
-                    <span class="tps-value">Error</span>
+                <div class="tps-grid">
+                    <div class="tps-item error">
+                        <span class="tps-label">Total TPS:</span>
+                        <span class="tps-value">Error</span>
+                    </div>
+                    <div class="tps-item error">
+                        <span class="tps-label">True TPS:</span>
+                        <span class="tps-value">Error</span>
+                    </div>
+                    <div class="tps-item error">
+                        <span class="tps-label">Vote TPS:</span>
+                        <span class="tps-value">Error</span>
+                    </div>
                 </div>
             `;
             return;
         }
 
-        const tpsValue = tpsData.tps.toFixed(1);
-        const tpsClass = this.getTPSClass(tpsData.tps);
-        const blockTime = tpsData.blockTime.toFixed(2);
+        const totalTPS = tpsData.totalTPS.toFixed(1);
+        const trueTPS = tpsData.trueTPS.toFixed(1);
+        const voteTPS = tpsData.voteTPS.toFixed(1);
+        
+        // Get TPS classes for color coding
+        const totalClass = this.getTPSClass(tpsData.totalTPS);
+        const trueClass = this.getTPSClass(tpsData.trueTPS);
+        const voteClass = this.getTPSClass(tpsData.voteTPS);
         
         tpsContainer.innerHTML = `
-            <div class="tps-display ${tpsClass}">
-                <span class="tps-label">Network TPS:</span>
-                <span class="tps-value">${tpsValue}</span>
-            </div>
-            <div class="tps-details">
-                <small>
-                    ${tpsData.transactionCount} txns in ${blockTime}s
-                    ${tpsData.isEstimated ? ' (estimated)' : ''}
-                </small>
+            <div class="tps-grid">
+                <div class="tps-item ${totalClass}">
+                    <span class="tps-label">Total TPS:</span>
+                    <span class="tps-value">${totalTPS}</span>
+                </div>
+                <div class="tps-item ${trueClass}">
+                    <span class="tps-label">True TPS:</span>
+                    <span class="tps-value">${trueTPS}</span>
+                </div>
+                <div class="tps-item ${voteClass}">
+                    <span class="tps-label">Vote TPS:</span>
+                    <span class="tps-value">${voteTPS}</span>
+                </div>
             </div>
         `;
     }
@@ -278,22 +287,22 @@ class X1Explorer {
         return 'tps-low';
     }
 
-    showTPSLoading() {
-        const tpsContainer = document.getElementById('tpsContainer');
-        tpsContainer.innerHTML = `
-            <div class="tps-loading">
-                <div class="small-spinner"></div>
-                <span>Calculating TPS...</span>
-            </div>
-        `;
-    }
-
     displayTPSError() {
         const tpsContainer = document.getElementById('tpsContainer');
         tpsContainer.innerHTML = `
-            <div class="tps-error">
-                <span class="tps-label">TPS:</span>
-                <span class="tps-value">Error</span>
+            <div class="tps-grid">
+                <div class="tps-item error">
+                    <span class="tps-label">Total TPS:</span>
+                    <span class="tps-value">Error</span>
+                </div>
+                <div class="tps-item error">
+                    <span class="tps-label">True TPS:</span>
+                    <span class="tps-value">Error</span>
+                </div>
+                <div class="tps-item error">
+                    <span class="tps-label">Vote TPS:</span>
+                    <span class="tps-value">Error</span>
+                </div>
             </div>
         `;
     }

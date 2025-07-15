@@ -16,21 +16,32 @@
             </div>
         </header>
 
+        <!-- TPS Status (moved above search) -->
+        <div class="tps-status-section">
+            <div id="tpsContainer" class="tps-status-container">
+                <!-- Initial placeholder - will be replaced without loading animation -->
+                <div class="tps-grid">
+                    <div class="tps-item">
+                        <span class="tps-label">Total TPS:</span>
+                        <span class="tps-value">--</span>
+                    </div>
+                    <div class="tps-item">
+                        <span class="tps-label">True TPS:</span>
+                        <span class="tps-value">--</span>
+                    </div>
+                    <div class="tps-item">
+                        <span class="tps-label">Vote TPS:</span>
+                        <span class="tps-value">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Search Section -->
         <main class="search-container">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="Search addresses, transaction hash, block number, programs or tokens..." />
                 <button id="searchBtn">Search</button>
-            </div>
-            
-            <!-- Network Status -->
-            <div class="network-status">
-                <div id="tpsContainer" class="tps-container">
-                    <div class="tps-loading">
-                        <div class="small-spinner"></div>
-                        <span>Calculating TPS...</span>
-                    </div>
-                </div>
             </div>
         </main>
 

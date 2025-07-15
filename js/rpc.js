@@ -99,6 +99,47 @@ class X1RPC {
         return await this.call('getTokenSupply', [mint]);
     }
 
+    // Get recent performance samples
+    async getRecentPerformanceSamples(limit = 1) {
+        return await this.call('getRecentPerformanceSamples', [limit]);
+    }
+
+    // Calculate all 3 types of TPS using getRecentPerformanceSamples
+    async getAllTPS() {
+        try {
+            // Get the most recent performance sample
+            const samples = await this.getRecentPerformanceSamples(1);
+            
+            if (!samples || samples.length === 0) {
+                throw new Error('No performance samples available');
+            }
+
+            const sample = samples[0];
+            
+            // Calculate all 3 types of TPS
+            const totalTPS = sample.numTransactions / sample.samplePeriodSecs;
+            const trueTPS = sample.numNonVoteTransactions / sample.samplePeriodSecs;
+            const voteTPS = (sample.numTransactions - sample.numNonVoteTransactions) / sample.samplePeriodSecs;
+            
+            return {
+                totalTPS: totalTPS,                    // Total TPS including votes
+                trueTPS: trueTPS,                      // User transactions TPS (excluding votes)  
+                voteTPS: voteTPS,                      // Vote transactions TPS
+                totalTransactions: sample.numTransactions,
+                nonVoteTransactions: sample.numNonVoteTransactions,
+                voteTransactions: sample.numTransactions - sample.numNonVoteTransactions,
+                numSlots: sample.numSlots,
+                samplePeriodSecs: sample.samplePeriodSecs,
+                slot: sample.slot,
+                timestamp: Date.now()
+            };
+
+        } catch (error) {
+            console.error('TPS calculation using performance samples failed:', error);
+            throw error;
+        }
+    }
+
     // Improved search functionality
     async search(query) {
         const cleanQuery = query.trim();
@@ -210,78 +251,6 @@ class X1RPC {
     // Get transaction history
     async getSignaturesForAddress(address, limit = 10) {
         return await this.call('getSignaturesForAddress', [address, { limit }]);
-    }
-
-    // Calculate TPS based on the latest block
-    async getLatestBlockTPS() {
-        try {
-            const currentSlot = await this.getSlot();
-            
-            // Get current block and previous block
-            const [currentBlock, previousBlock] = await Promise.all([
-                this.getBlock(currentSlot),
-                this.getBlock(currentSlot - 1)
-            ]);
-
-            if (!currentBlock || !previousBlock) {
-                throw new Error('Unable to fetch required blocks');
-            }
-
-            if (!currentBlock.blockTime || !previousBlock.blockTime) {
-                throw new Error('Block timestamps not available');
-            }
-
-            const timeDiff = currentBlock.blockTime - previousBlock.blockTime;
-            const currentTxCount = currentBlock.transactions?.length || 0;
-            
-            if (timeDiff <= 0) {
-                throw new Error('Invalid time difference between blocks');
-            }
-
-            const tps = currentTxCount / timeDiff;
-
-            return {
-                tps: tps,
-                currentSlot: currentSlot,
-                transactionCount: currentTxCount,
-                blockTime: timeDiff,
-                blockTimestamp: currentBlock.blockTime
-            };
-
-        } catch (error) {
-            console.error('Latest block TPS calculation failed:', error);
-            throw error;
-        }
-    }
-
-    // Fallback: estimate TPS using average block time (if we can't get two consecutive blocks)
-    async getEstimatedTPS() {
-        try {
-            const currentSlot = await this.getSlot();
-            const currentBlock = await this.getBlock(currentSlot);
-
-            if (!currentBlock || !currentBlock.transactions) {
-                throw new Error('Unable to fetch current block');
-            }
-
-            const txCount = currentBlock.transactions.length;
-            // Solana/X1 average block time is approximately 400ms
-            const estimatedBlockTime = 0.4; // seconds
-            const tps = txCount / estimatedBlockTime;
-
-            return {
-                tps: tps,
-                currentSlot: currentSlot,
-                transactionCount: txCount,
-                blockTime: estimatedBlockTime,
-                isEstimated: true,
-                blockTimestamp: currentBlock.blockTime
-            };
-
-        } catch (error) {
-            console.error('Estimated TPS calculation failed:', error);
-            throw error;
-        }
     }
 }
 

@@ -25,7 +25,7 @@ body {
 /* Header styles */
 .header {
     text-align: center;
-    margin-bottom: 60px;
+    margin-bottom: 30px;
 }
 
 .header h1 {
@@ -39,6 +39,75 @@ body {
     color: #7f8c8d;
 }
 
+/* TPS Status Section */
+.tps-status-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.tps-status-container {
+    width: 100%;
+    max-width: 600px;
+}
+
+.tps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 12px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tps-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.tps-item.tps-high {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.tps-item.tps-medium {
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffeaa7;
+}
+
+.tps-item.tps-low {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.tps-item.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.tps-label {
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+.tps-value {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+}
+
 /* Search container */
 .search-container {
     text-align: center;
@@ -48,7 +117,7 @@ body {
 .search-box {
     display: flex;
     max-width: 800px;
-    margin: 0 auto 30px;
+    margin: 0 auto;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     border-radius: 25px;
     overflow: hidden;
@@ -74,89 +143,6 @@ body {
 
 .search-box button:hover {
     background-color: #2980b9;
-}
-
-/* Network Status */
-.network-status {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-.tps-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-}
-
-.tps-display {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-radius: 25px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.tps-display.tps-high {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.tps-display.tps-medium {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
-}
-
-.tps-display.tps-low {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.tps-label {
-    font-size: 14px;
-    font-weight: 400;
-}
-
-.tps-value {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.tps-details {
-    text-align: center;
-    color: #7f8c8d;
-    font-size: 12px;
-}
-
-.tps-loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #7f8c8d;
-    font-size: 14px;
-    padding: 10px 16px;
-    background-color: #f8f9fa;
-    border-radius: 25px;
-    border: 1px solid #e9ecef;
-}
-
-.tps-error {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #e74c3c;
-    font-size: 14px;
-    padding: 10px 16px;
-    background-color: #fdf2f2;
-    border-radius: 25px;
-    border: 1px solid #fecaca;
 }
 
 /* Loading state */
@@ -372,6 +358,33 @@ code {
         font-size: 2rem;
     }
     
+    .header {
+        margin-bottom: 20px;
+    }
+    
+    .tps-status-section {
+        margin-bottom: 20px;
+    }
+    
+    .tps-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 10px;
+    }
+    
+    .tps-item {
+        padding: 8px 6px;
+    }
+    
+    .tps-label {
+        font-size: 10px;
+        margin-bottom: 2px;
+    }
+    
+    .tps-value {
+        font-size: 16px;
+    }
+    
     .search-box {
         max-width: 100%;
     }
@@ -400,14 +413,6 @@ code {
     
     .footer-content p {
         font-size: 13px;
-    }
-    
-    .tps-display {
-        font-size: 14px;
-    }
-    
-    .tps-value {
-        font-size: 18px;
     }
     
     .notification {
