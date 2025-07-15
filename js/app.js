@@ -234,11 +234,10 @@ class X1Explorer {
 
     async loadRecentBlocks() {
         try {
+            // Show small loading indicator without clearing existing blocks
+            this.showBlocksLoading();
+            
             const currentSlot = await rpc.getSlot();
-            const blocksList = document.getElementById('recentBlocksList');
-            
-            blocksList.innerHTML = '<div class="loading-blocks">Loading recent blocks...</div>';
-            
             const blockElements = [];
             
             // Get latest 5 blocks
@@ -258,15 +257,25 @@ class X1Explorer {
                 }
             }
             
+            // Only update the blocks list after all data is loaded
+            const blocksList = document.getElementById('recentBlocksList');
             blocksList.innerHTML = '';
             blockElements.forEach(element => {
                 blocksList.appendChild(element);
             });
             
+            // Hide loading indicator
+            this.hideBlocksLoading();
+            
         } catch (error) {
             console.error('Failed to load recent blocks:', error);
+            this.hideBlocksLoading();
+            
+            // Only show error if there are no existing blocks
             const blocksList = document.getElementById('recentBlocksList');
-            blocksList.innerHTML = '<div class="error-blocks">Failed to load, please try again later</div>';
+            if (blocksList.children.length === 0) {
+                blocksList.innerHTML = '<div class="error-blocks">Failed to load, please try again later</div>';
+            }
         }
     }
 
@@ -389,6 +398,33 @@ class X1Explorer {
                 document.body.removeChild(notification);
             }, 300);
         }, 2000);
+    }
+
+    // Add new methods for blocks loading state
+    showBlocksLoading() {
+        const recentBlocksSection = document.querySelector('.recent-blocks');
+        const existingIndicator = recentBlocksSection.querySelector('.blocks-loading-indicator');
+        
+        // Don't add multiple loading indicators
+        if (existingIndicator) return;
+        
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'blocks-loading-indicator';
+        loadingIndicator.innerHTML = `
+            <div class="small-spinner"></div>
+            <span>Updating...</span>
+        `;
+        
+        // Insert the loading indicator after the h3 title
+        const title = recentBlocksSection.querySelector('h3');
+        title.insertAdjacentElement('afterend', loadingIndicator);
+    }
+
+    hideBlocksLoading() {
+        const loadingIndicator = document.querySelector('.blocks-loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
     }
 }
 

@@ -316,6 +316,52 @@ code {
     display: none;
 }
 
+/* Recent blocks loading indicator */
+.blocks-loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.small-spinner {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+}
+
+/* Recent blocks section improvements */
+.recent-blocks h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Remove the generic loading-blocks style since we're not using it anymore */
+.loading-blocks {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+}
+
+.error-blocks {
+    text-align: center;
+    padding: 20px;
+    color: #e74c3c;
+    background-color: #fdf2f2;
+    border-radius: 5px;
+    border: 1px solid #fecaca;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
@@ -354,4 +400,24 @@ code {
     .notification.show {
         transform: translateY(0);
     }
+
+    .blocks-loading-indicator {
+        font-size: 12px;
+        padding: 8px;
+    }
+    
+    .small-spinner {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+.initial-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 30px;
+    color: #7f8c8d;
+    font-size: 14px;
 }
