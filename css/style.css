@@ -425,3 +425,225 @@ code {
         transform: translateY(0);
     }
 }
+
+/* Transaction detail sections */
+.expandable-section {
+    margin: 15px 0;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.section-header {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    transition: background-color 0.2s;
+}
+
+.section-header:hover {
+    background-color: #e9ecef;
+}
+
+.section-header.expanded {
+    background-color: #e7f1ff;
+}
+
+.toggle-icon {
+    font-size: 12px;
+    color: #6c757d;
+    transition: transform 0.2s;
+}
+
+.section-content {
+    display: none;
+    padding: 15px;
+    background-color: #fff;
+}
+
+/* 如果内容很长，添加一些视觉引导 */
+.section-content:after {
+    content: "";
+    display: block;
+    height: 1px;
+    background-color: #e9ecef;
+    margin-top: 10px;
+}
+
+/* Account items */
+.account-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f3f4;
+    font-size: 13px;
+}
+
+.account-item:last-child {
+    border-bottom: none;
+}
+
+.account-index {
+    color: #6c757d;
+    font-weight: 500;
+    min-width: 30px;
+}
+
+.account-address {
+    font-family: monospace;
+    font-size: 11px;
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    word-break: break-all;
+    flex: 1;
+}
+
+.account-flags {
+    color: #28a745;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Instruction items */
+.instruction-item {
+    margin: 12px 0;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+}
+
+.instruction-item:first-child {
+    margin-top: 0;
+}
+
+.instruction-item:last-child {
+    margin-bottom: 0;
+}
+
+.instruction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.instruction-type {
+    background-color: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.instruction-details {
+    font-size: 13px;
+}
+
+.instruction-details p {
+    margin: 6px 0;
+}
+
+.instruction-accounts {
+    margin-left: 15px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.instruction-accounts div {
+    padding: 2px 0;
+}
+
+.instruction-data {
+    font-family: monospace;
+    font-size: 10px;
+    background-color: #fff;
+    padding: 4px 6px;
+    border-radius: 3px;
+    word-break: break-all;
+    max-width: 100%;
+    display: inline-block;
+}
+
+/* Log messages */
+.log-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f3f4;
+    font-size: 13px;
+}
+
+.log-item:last-child {
+    border-bottom: none;
+}
+
+.log-index {
+    color: #6c757d;
+    font-weight: 500;
+    min-width: 30px;
+    flex-shrink: 0;
+}
+
+.log-message {
+    font-family: monospace;
+    font-size: 11px;
+    background-color: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 3px;
+    word-break: break-all;
+    flex: 1;
+    line-height: 1.4;
+}
+
+/* Responsive adjustments for transaction details */
+@media (max-width: 768px) {
+    .section-content {
+        padding: 10px;
+    }
+    
+    .account-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .account-address {
+        font-size: 10px;
+        width: 100%;
+    }
+    
+    .instruction-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .instruction-item {
+        margin: 8px 0;
+        padding: 10px;
+    }
+    
+    .log-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .log-message {
+        width: 100%;
+        font-size: 10px;
+    }
+}

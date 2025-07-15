@@ -136,6 +136,88 @@ class X1Explorer {
                 instructions = tx.transaction.message.instructions || [];
             }
         }
+
+        const logMessages = tx.meta?.logMessages || [];
+        
+        // Format account keys
+        const formatAccountKeys = () => {
+            if (accountKeys.length === 0) return '<p>No account keys found</p>';
+            
+            return accountKeys.map((account, index) => {
+                // Handle both string format and object format
+                const address = typeof account === 'string' ? account : account.pubkey;
+                const signer = typeof account === 'object' && account.signer ? ' (Signer)' : '';
+                const writable = typeof account === 'object' && account.writable ? ' (Writable)' : '';
+                
+                return `<div class="account-item">
+                    <span class="account-index">#${index}:</span>
+                    <code class="account-address">${address}</code>
+                    <span class="account-flags">${signer}${writable}</span>
+                </div>`;
+            }).join('');
+        };
+
+        // Format instructions
+        const formatInstructions = () => {
+            if (instructions.length === 0) return '<p>No instructions found</p>';
+            
+            return instructions.map((instruction, index) => {
+                // Handle different instruction formats (parsed vs raw)
+                let programId = '';
+                let programName = '';
+                let instructionType = '';
+                let accounts = [];
+                let data = '';
+
+                if (instruction.parsed) {
+                    // Parsed instruction format
+                    programId = instruction.program || 'Unknown';
+                    programName = instruction.programId || programId;
+                    instructionType = instruction.parsed.type || 'Unknown';
+                    
+                    if (instruction.parsed.info) {
+                        const info = instruction.parsed.info;
+                        // Extract key information based on instruction type
+                        if (info.source) accounts.push(`Source: ${info.source}`);
+                        if (info.destination) accounts.push(`Destination: ${info.destination}`);
+                        if (info.authority) accounts.push(`Authority: ${info.authority}`);
+                        if (info.amount) accounts.push(`Amount: ${info.amount}`);
+                        if (info.mint) accounts.push(`Mint: ${info.mint}`);
+                    }
+                } else {
+                    // Raw instruction format
+                    programId = instruction.programIdIndex !== undefined ? 
+                        `Account Index: ${instruction.programIdIndex}` : 'Unknown';
+                    accounts = instruction.accounts ? 
+                        instruction.accounts.map(acc => `Account Index: ${acc}`) : [];
+                    data = instruction.data || '';
+                }
+
+                return `<div class="instruction-item">
+                    <div class="instruction-header">
+                        <strong>Instruction #${index + 1}</strong>
+                        ${instructionType ? `<span class="instruction-type">${instructionType}</span>` : ''}
+                    </div>
+                    <div class="instruction-details">
+                        <p><strong>Program:</strong> <code>${programId}</code></p>
+                        ${accounts.length > 0 ? `<p><strong>Accounts:</strong></p><div class="instruction-accounts">${accounts.map(acc => `<div>${acc}</div>`).join('')}</div>` : ''}
+                        ${data ? `<p><strong>Data:</strong> <code class="instruction-data">${data}</code></p>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        // Format log messages
+        const formatLogMessages = () => {
+            if (logMessages.length === 0) return '<p>No log messages</p>';
+            
+            return logMessages.map((message, index) => {
+                return `<div class="log-item">
+                    <span class="log-index">#${index + 1}:</span>
+                    <span class="log-message">${message}</span>
+                </div>`;
+            }).join('');
+        };
         
         return `
             <div class="result-header">
@@ -148,13 +230,40 @@ class X1Explorer {
                 <p><strong>Block Height:</strong> ${tx.slot || 'N/A'}</p>
                 <p><strong>Fee:</strong> ${tx.meta?.fee || 0} lamports</p>
                 <p><strong>Compute Units Consumed:</strong> ${tx.meta?.computeUnitsConsumed || 0}</p>
-                <p><strong>Account Count:</strong> ${accountKeys.length}</p>
-                <p><strong>Instruction Count:</strong> ${instructions.length}</p>
-                <p><strong>Log Messages:</strong> ${tx.meta?.logMessages?.length || 0}</p>
                 <p><strong>Transaction Version:</strong> ${tx.version || 'legacy'}</p>
-                ${tx.meta?.err ? `<p><strong>Error:</strong> <span class="error-text">${JSON.stringify(tx.meta.err)}</span></p>` : ''}
                 ${tx.meta?.preBalances ? `<p><strong>Pre Balances:</strong> ${tx.meta.preBalances.join(', ')} lamports</p>` : ''}
                 ${tx.meta?.postBalances ? `<p><strong>Post Balances:</strong> ${tx.meta.postBalances.join(', ')} lamports</p>` : ''}
+                ${tx.meta?.err ? `<p><strong>Error:</strong> <span class="error-text">${JSON.stringify(tx.meta.err)}</span></p>` : ''}
+                
+                <!-- Account Details -->
+                <div class="expandable-section">
+                    <h5 class="section-header" onclick="toggleSection('accounts-${signature.slice(-8)}')">
+                        <span class="toggle-icon">▼</span> Account Count: ${accountKeys.length}
+                    </h5>
+                    <div id="accounts-${signature.slice(-8)}" class="section-content">
+                        ${formatAccountKeys()}
+                    </div>
+                </div>
+
+                <!-- Instruction Details -->
+                <div class="expandable-section">
+                    <h5 class="section-header" onclick="toggleSection('instructions-${signature.slice(-8)}')">
+                        <span class="toggle-icon">▼</span> Instruction Count: ${instructions.length}
+                    </h5>
+                    <div id="instructions-${signature.slice(-8)}" class="section-content">
+                        ${formatInstructions()}
+                    </div>
+                </div>
+
+                <!-- Log Messages -->
+                <div class="expandable-section">
+                    <h5 class="section-header" onclick="toggleSection('logs-${signature.slice(-8)}')">
+                        <span class="toggle-icon">▼</span> Log Messages: ${logMessages.length}
+                    </h5>
+                    <div id="logs-${signature.slice(-8)}" class="section-content">
+                        ${formatLogMessages()}
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -389,6 +498,23 @@ class X1Explorer {
         }, 2000);
     }
 }
+
+// Toggle section visibility function (global function for onclick)
+window.toggleSection = function(sectionId) {
+    const content = document.getElementById(sectionId);
+    const header = content.previousElementSibling;
+    const icon = header.querySelector('.toggle-icon');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+        icon.textContent = '▲';
+        header.classList.add('expanded');
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▼';
+        header.classList.remove('expanded');
+    }
+};
 
 // Initialize application after page load
 document.addEventListener('DOMContentLoaded', () => {
