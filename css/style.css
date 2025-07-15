@@ -155,17 +155,13 @@ body {
     padding: 40px;
 }
 
-/* loading spinner */
-.spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3498db;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
+.loading-spinner {
+    margin: 0 auto 20px;
+}
+
+.loading-spinner i {
     font-size: 40px;
     color: #3498db;
-    margin: 0 auto 20px;
 }
 
 .small-spinner {
