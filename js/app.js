@@ -103,15 +103,15 @@ class X1Explorer {
         const blockTime = new Date(block.blockTime * 1000).toLocaleString('en-US');
         return `
             <div class="result-header">
-                <h4>Block #${block.parentSlot + 1}</h4>
-                <span class="timestamp">${blockTime}</span>
+                <h4><i class="fas fa-cube"></i> Block #${block.parentSlot + 1}</h4>
+                <span class="timestamp"><i class="fas fa-clock"></i> ${blockTime}</span>
             </div>
             <div class="result-details">
-                <p><strong>Block Hash:</strong> <code>${block.blockhash}</code></p>
-                <p><strong>Parent Slot:</strong> ${block.parentSlot}</p>
-                <p><strong>Transactions:</strong> ${block.transactions?.length || 0}</p>
-                <p><strong>Rewards:</strong> ${block.rewards?.length || 0}</p>
-                <p><strong>Block Height:</strong> ${block.blockHeight || 'N/A'}</p>
+                <p><strong><i class="fas fa-fingerprint"></i> Block Hash:</strong> <code>${block.blockhash}</code></p>
+                <p><strong><i class="fas fa-link"></i> Parent Slot:</strong> ${block.parentSlot}</p>
+                <p><strong><i class="fas fa-receipt"></i> Transactions:</strong> ${block.transactions?.length || 0}</p>
+                <p><strong><i class="fas fa-gift"></i> Rewards:</strong> ${block.rewards?.length || 0}</p>
+                <p><strong><i class="fas fa-layer-group"></i> Block Height:</strong> ${block.blockHeight || 'N/A'}</p>
             </div>
         `;
     }
@@ -141,13 +141,13 @@ class X1Explorer {
         
         // Format account keys
         const formatAccountKeys = () => {
-            if (accountKeys.length === 0) return '<p>No account keys found</p>';
+            if (accountKeys.length === 0) return '<p><i class="fas fa-info-circle"></i> No account keys found</p>';
             
             return accountKeys.map((account, index) => {
                 // Handle both string format and object format
                 const address = typeof account === 'string' ? account : account.pubkey;
-                const signer = typeof account === 'object' && account.signer ? ' (Signer)' : '';
-                const writable = typeof account === 'object' && account.writable ? ' (Writable)' : '';
+                const signer = typeof account === 'object' && account.signer ? ' <i class="fas fa-key" title="Signer"></i>' : '';
+                const writable = typeof account === 'object' && account.writable ? ' <i class="fas fa-edit" title="Writable"></i>' : '';
                 
                 return `<div class="account-item">
                     <span class="account-index">#${index}:</span>
@@ -159,7 +159,7 @@ class X1Explorer {
 
         // Format instructions
         const formatInstructions = () => {
-            if (instructions.length === 0) return '<p>No instructions found</p>';
+            if (instructions.length === 0) return '<p><i class="fas fa-info-circle"></i> No instructions found</p>';
             
             return instructions.map((instruction, index) => {
                 // Handle different instruction formats (parsed vs raw)
@@ -178,30 +178,30 @@ class X1Explorer {
                     if (instruction.parsed.info) {
                         const info = instruction.parsed.info;
                         // Extract key information based on instruction type
-                        if (info.source) accounts.push(`Source: ${info.source}`);
-                        if (info.destination) accounts.push(`Destination: ${info.destination}`);
-                        if (info.authority) accounts.push(`Authority: ${info.authority}`);
-                        if (info.amount) accounts.push(`Amount: ${info.amount}`);
-                        if (info.mint) accounts.push(`Mint: ${info.mint}`);
+                        if (info.source) accounts.push(`<i class="fas fa-arrow-right"></i> Source: ${info.source}`);
+                        if (info.destination) accounts.push(`<i class="fas fa-arrow-left"></i> Destination: ${info.destination}`);
+                        if (info.authority) accounts.push(`<i class="fas fa-shield-alt"></i> Authority: ${info.authority}`);
+                        if (info.amount) accounts.push(`<i class="fas fa-coins"></i> Amount: ${info.amount}`);
+                        if (info.mint) accounts.push(`<i class="fas fa-coins"></i> Mint: ${info.mint}`);
                     }
                 } else {
                     // Raw instruction format
                     programId = instruction.programIdIndex !== undefined ? 
                         `Account Index: ${instruction.programIdIndex}` : 'Unknown';
                     accounts = instruction.accounts ? 
-                        instruction.accounts.map(acc => `Account Index: ${acc}`) : [];
+                        instruction.accounts.map(acc => `<i class="fas fa-user"></i> Account Index: ${acc}`) : [];
                     data = instruction.data || '';
                 }
 
                 return `<div class="instruction-item">
                     <div class="instruction-header">
-                        <strong>Instruction #${index + 1}</strong>
-                        ${instructionType ? `<span class="instruction-type">${instructionType}</span>` : ''}
+                        <strong><i class="fas fa-cog"></i> Instruction #${index + 1}</strong>
+                        ${instructionType ? `<span class="instruction-type"><i class="fas fa-tag"></i> ${instructionType}</span>` : ''}
                     </div>
                     <div class="instruction-details">
-                        <p><strong>Program:</strong> <code>${programId}</code></p>
-                        ${accounts.length > 0 ? `<p><strong>Accounts:</strong></p><div class="instruction-accounts">${accounts.map(acc => `<div>${acc}</div>`).join('')}</div>` : ''}
-                        ${data ? `<p><strong>Data:</strong> <code class="instruction-data">${data}</code></p>` : ''}
+                        <p><strong><i class="fas fa-code"></i> Program:</strong> <code>${programId}</code></p>
+                        ${accounts.length > 0 ? `<p><strong><i class="fas fa-users"></i> Accounts:</strong></p><div class="instruction-accounts">${accounts.map(acc => `<div>${acc}</div>`).join('')}</div>` : ''}
+                        ${data ? `<p><strong><i class="fas fa-database"></i> Data:</strong> <code class="instruction-data">${data}</code></p>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -209,36 +209,48 @@ class X1Explorer {
 
         // Format log messages
         const formatLogMessages = () => {
-            if (logMessages.length === 0) return '<p>No log messages</p>';
+            if (logMessages.length === 0) return '<p><i class="fas fa-info-circle"></i> No log messages</p>';
             
             return logMessages.map((message, index) => {
+                // Add appropriate icon based on message content
+                let icon = 'fas fa-info';
+                if (message.toLowerCase().includes('error')) {
+                    icon = 'fas fa-exclamation-triangle';
+                } else if (message.toLowerCase().includes('success')) {
+                    icon = 'fas fa-check-circle';
+                } else if (message.toLowerCase().includes('invoke')) {
+                    icon = 'fas fa-play';
+                }
+                
                 return `<div class="log-item">
                     <span class="log-index">#${index + 1}:</span>
-                    <span class="log-message">${message}</span>
+                    <span class="log-message"><i class="${icon}"></i> ${message}</span>
                 </div>`;
             }).join('');
         };
         
         return `
             <div class="result-header">
-                <h4>Transaction</h4>
-                <span class="status ${statusClass}">${status}</span>
+                <h4><i class="fas fa-receipt"></i> Transaction</h4>
+                <span class="status ${statusClass}">
+                    <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
+                </span>
             </div>
             <div class="result-details">
-                <p><strong>Signature:</strong> <code>${signature}</code></p>
-                <p><strong>Block Time:</strong> ${blockTime}</p>
-                <p><strong>Block Height:</strong> ${tx.slot || 'N/A'}</p>
-                <p><strong>Fee:</strong> ${tx.meta?.fee || 0} lamports</p>
-                <p><strong>Compute Units Consumed:</strong> ${tx.meta?.computeUnitsConsumed || 0}</p>
-                <p><strong>Transaction Version:</strong> ${tx.version || 'legacy'}</p>
-                ${tx.meta?.preBalances ? `<p><strong>Pre Balances:</strong> ${tx.meta.preBalances.join(', ')} lamports</p>` : ''}
-                ${tx.meta?.postBalances ? `<p><strong>Post Balances:</strong> ${tx.meta.postBalances.join(', ')} lamports</p>` : ''}
-                ${tx.meta?.err ? `<p><strong>Error:</strong> <span class="error-text">${JSON.stringify(tx.meta.err)}</span></p>` : ''}
+                <p><strong><i class="fas fa-signature"></i> Signature:</strong> <code>${signature}</code></p>
+                <p><strong><i class="fas fa-clock"></i> Block Time:</strong> ${blockTime}</p>
+                <p><strong><i class="fas fa-layer-group"></i> Block Height:</strong> ${tx.slot || 'N/A'}</p>
+                <p><strong><i class="fas fa-dollar-sign"></i> Fee:</strong> ${tx.meta?.fee || 0} lamports</p>
+                <p><strong><i class="fas fa-microchip"></i> Compute Units Consumed:</strong> ${tx.meta?.computeUnitsConsumed || 0}</p>
+                <p><strong><i class="fas fa-code-branch"></i> Transaction Version:</strong> ${tx.version || 'legacy'}</p>
+                ${tx.meta?.preBalances ? `<p><strong><i class="fas fa-wallet"></i> Pre Balances:</strong> ${tx.meta.preBalances.join(', ')} lamports</p>` : ''}
+                ${tx.meta?.postBalances ? `<p><strong><i class="fas fa-wallet"></i> Post Balances:</strong> ${tx.meta.postBalances.join(', ')} lamports</p>` : ''}
+                ${tx.meta?.err ? `<p><strong><i class="fas fa-exclamation-triangle"></i> Error:</strong> <span class="error-text">${JSON.stringify(tx.meta.err)}</span></p>` : ''}
                 
                 <!-- Account Details -->
                 <div class="expandable-section">
                     <h5 class="section-header" onclick="toggleSection('accounts-${signature.slice(-8)}')">
-                        <span class="toggle-icon">▼</span> Account Count: ${accountKeys.length}
+                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-users"></i> Account Count: ${accountKeys.length}
                     </h5>
                     <div id="accounts-${signature.slice(-8)}" class="section-content">
                         ${formatAccountKeys()}
@@ -248,7 +260,7 @@ class X1Explorer {
                 <!-- Instruction Details -->
                 <div class="expandable-section">
                     <h5 class="section-header" onclick="toggleSection('instructions-${signature.slice(-8)}')">
-                        <span class="toggle-icon">▼</span> Instruction Count: ${instructions.length}
+                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-cogs"></i> Instruction Count: ${instructions.length}
                     </h5>
                     <div id="instructions-${signature.slice(-8)}" class="section-content">
                         ${formatInstructions()}
@@ -258,7 +270,7 @@ class X1Explorer {
                 <!-- Log Messages -->
                 <div class="expandable-section">
                     <h5 class="section-header" onclick="toggleSection('logs-${signature.slice(-8)}')">
-                        <span class="toggle-icon">▼</span> Log Messages: ${logMessages.length}
+                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-list-alt"></i> Log Messages: ${logMessages.length}
                     </h5>
                     <div id="logs-${signature.slice(-8)}" class="section-content">
                         ${formatLogMessages()}
@@ -273,11 +285,11 @@ class X1Explorer {
         if (!accountData) {
             return `
                 <div class="result-header">
-                    <h4>Account</h4>
+                    <h4><i class="fas fa-user"></i> Account</h4>
                     <span class="address">${address}</span>
                 </div>
                 <div class="result-details">
-                    <p><strong>Status:</strong> Account does not exist or is closed</p>
+                    <p><strong><i class="fas fa-info-circle"></i> Status:</strong> Account does not exist or is closed</p>
                 </div>
             `;
         }
@@ -286,15 +298,15 @@ class X1Explorer {
         
         return `
             <div class="result-header">
-                <h4>Account</h4>
+                <h4><i class="fas fa-user"></i> Account</h4>
                 <span class="address">${address}</span>
             </div>
             <div class="result-details">
-                <p><strong>Balance:</strong> ${balance.toFixed(9)} SOL</p>
-                <p><strong>Owner:</strong> <code>${accountData.owner}</code></p>
-                <p><strong>Data Length:</strong> ${accountData.data ? accountData.data[0].length : 0} bytes</p>
-                <p><strong>Executable:</strong> ${accountData.executable ? 'Yes' : 'No'}</p>
-                <p><strong>Rent Exempt:</strong> ${accountData.lamports > 0 ? 'Yes' : 'No'}</p>
+                <p><strong><i class="fas fa-wallet"></i> Balance:</strong> ${balance.toFixed(9)} SOL</p>
+                <p><strong><i class="fas fa-user-tie"></i> Owner:</strong> <code>${accountData.owner}</code></p>
+                <p><strong><i class="fas fa-database"></i> Data Length:</strong> ${accountData.data ? accountData.data[0].length : 0} bytes</p>
+                <p><strong><i class="fas fa-play"></i> Executable:</strong> ${accountData.executable ? '✓ Yes' : '✗ No'}</p>
+                <p><strong><i class="fas fa-shield-alt"></i> Rent Exempt:</strong> ${accountData.lamports > 0 ? '✓ Yes' : '✗ No'}</p>
             </div>
         `;
     }
@@ -316,14 +328,14 @@ class X1Explorer {
     formatTokenResult(token, mint) {
         return `
             <div class="result-header">
-                <h4>Token</h4>
+                <h4><i class="fas fa-coins"></i> Token</h4>
                 <span class="address">${mint}</span>
             </div>
             <div class="result-details">
-                <p><strong>Token Address:</strong> <code>${mint}</code></p>
-                <p><strong>Total Supply:</strong> ${token.value?.uiAmount || 'N/A'}</p>
-                <p><strong>Decimals:</strong> ${token.value?.decimals || 'N/A'}</p>
-                <p><strong>Raw Amount:</strong> ${token.value?.amount || 'N/A'}</p>
+                <p><strong><i class="fas fa-address-card"></i> Token Address:</strong> <code>${mint}</code></p>
+                <p><strong><i class="fas fa-chart-line"></i> Total Supply:</strong> ${token.value?.uiAmount || 'N/A'}</p>
+                <p><strong><i class="fas fa-decimal"></i> Decimals:</strong> ${token.value?.decimals || 'N/A'}</p>
+                <p><strong><i class="fas fa-hashtag"></i> Raw Amount:</strong> ${token.value?.amount || 'N/A'}</p>
             </div>
         `;
     }
@@ -507,11 +519,11 @@ window.toggleSection = function(sectionId) {
     
     if (content.style.display === 'none' || content.style.display === '') {
         content.style.display = 'block';
-        icon.textContent = '▲';
+        icon.className = 'fas fa-chevron-up toggle-icon';
         header.classList.add('expanded');
     } else {
         content.style.display = 'none';
-        icon.textContent = '▼';
+        icon.className = 'fas fa-chevron-down toggle-icon';
         header.classList.remove('expanded');
     }
 };

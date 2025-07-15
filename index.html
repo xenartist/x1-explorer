@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X1 Blockchain Explorer</title>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -16,7 +18,7 @@
             </div>
         </header>
 
-        <!-- TPS Status (moved above search) -->
+        <!-- TPS Status (above search) -->
         <div class="tps-status-section">
             <div id="tpsContainer" class="tps-status-container">
                 <!-- Initial placeholder - will be replaced without loading animation -->
@@ -41,13 +43,17 @@
         <main class="search-container">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="Search addresses, transaction hash, block number, programs or tokens..." />
-                <button id="searchBtn">Search</button>
+                <button id="searchBtn">
+                    <i class="fas fa-search"></i> Search
+                </button>
             </div>
         </main>
 
         <!-- Loading State -->
         <div id="loading" class="loading hidden">
-            <div class="spinner"></div>
+            <div class="spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
             <p>Searching...</p>
         </div>
 
