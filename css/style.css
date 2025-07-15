@@ -26,6 +26,21 @@ body {
 .header {
     text-align: center;
     margin-bottom: 30px;
+    position: relative;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.logo {
+    flex: 1;
+    text-align: center;
 }
 
 .header h1 {
@@ -37,6 +52,82 @@ body {
 .header p {
     font-size: 1.2rem;
     color: #7f8c8d;
+}
+
+/* RPC Selector */
+.rpc-selector {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    min-width: 120px;
+}
+
+.rpc-selector label {
+    font-size: 11px;
+    color: #6c757d;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px; 
+}
+
+.rpc-dropdown {
+    padding: 5px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.3s;
+    min-width: 100px;
+    width: auto;
+}
+
+.rpc-dropdown:hover {
+    border-color: #007bff;
+}
+
+.rpc-dropdown:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.rpc-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #6c757d;
+}
+
+.rpc-status i {
+    font-size: 7px;
+}
+
+.rpc-status.connected {
+    color: #28a745;
+}
+
+.rpc-status.connecting {
+    color: #ffc107;
+}
+
+.rpc-status.disconnected {
+    color: #dc3545;
+}
+
+.rpc-status.connected i {
+    color: #28a745;
+}
+
+.rpc-status.connecting i {
+    color: #ffc107;
+}
+
+.rpc-status.disconnected i {
+    color: #dc3545;
 }
 
 /* TPS Status Section */
@@ -426,6 +517,35 @@ code {
     
     .notification.show {
         transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments for header */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .rpc-selector {
+        align-items: center;
+        min-width: auto;
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .rpc-dropdown {
+        width: 100%;
+        min-width: 100px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header {
+        margin-bottom: 20px;
     }
 }
 

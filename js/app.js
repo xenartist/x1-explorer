@@ -1,6 +1,6 @@
 class X1Explorer {
     constructor() {
-        this.tpsData = null;
+        this.currentFilter = 'all';
         this.init();
     }
 
@@ -9,6 +9,7 @@ class X1Explorer {
         window.x1Explorer = this;
         
         this.bindEvents();
+        this.initRPCSelector();
         this.loadTPS();
         
         // Update TPS every 30 seconds (since performance samples are taken every 60 seconds)
@@ -28,6 +29,74 @@ class X1Explorer {
                 this.performSearch();
             }
         });
+    }
+
+    // Initialize RPC selector
+    initRPCSelector() {
+        const rpcSelect = document.getElementById('rpcSelect');
+        
+        // Handle RPC selection change
+        rpcSelect.addEventListener('change', (e) => {
+            this.changeRPC(e.target.value);
+        });
+        
+        // Initial connection test
+        this.testRPCConnection();
+    }
+
+    // Change RPC endpoint
+    async changeRPC(newUrl) {
+        console.log('Changing RPC to:', newUrl);
+        
+        // Update status to connecting
+        this.updateRPCStatus('connecting', 'Connecting...');
+        
+        // Update RPC instance
+        rpc.updateUrl(newUrl);
+        
+        // Test new connection
+        await this.testRPCConnection();
+        
+        // Reload TPS data with new endpoint
+        this.loadTPS();
+    }
+
+    // Test RPC connection
+    async testRPCConnection() {
+        try {
+            const result = await rpc.testConnection();
+            if (result.connected) {
+                this.updateRPCStatus('connected', 'Connected');
+            } else {
+                this.updateRPCStatus('disconnected', 'Failed');
+            }
+        } catch (error) {
+            console.error('RPC connection test failed:', error);
+            this.updateRPCStatus('disconnected', 'Failed');
+        }
+    }
+
+    // Update RPC status display
+    updateRPCStatus(status, text) {
+        const statusElement = document.getElementById('rpcStatus');
+        const statusIcon = document.getElementById('rpcStatusIcon');
+        const statusText = document.getElementById('rpcStatusText');
+        
+        // Remove all status classes
+        statusElement.classList.remove('connected', 'connecting', 'disconnected');
+        
+        // Add current status class
+        statusElement.classList.add(status);
+        
+        // Update text
+        statusText.textContent = text;
+        
+        // Update icon animation for connecting state
+        if (status === 'connecting') {
+            statusIcon.className = 'fas fa-circle fa-pulse';
+        } else {
+            statusIcon.className = 'fas fa-circle';
+        }
     }
 
     async performSearch() {

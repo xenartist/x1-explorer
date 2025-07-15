@@ -12,9 +12,22 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <h1>X1 Explorer</h1>
-                <p>X1 Blockchain Explorer</p>
+            <div class="header-content">
+                <div class="logo">
+                    <h1>X1 Explorer</h1>
+                    <p>X1 Blockchain Explorer</p>
+                </div>
+                <!-- RPC Selector -->
+                <div class="rpc-selector">
+                    <label for="rpcSelect"><i class="fas fa-server"></i> RPC Endpoint:</label>
+                    <select id="rpcSelect" class="rpc-dropdown">
+                        <option value="https://rpc-testnet.x1.wiki" selected>X1 Testnet</option>
+                    </select>
+                    <div class="rpc-status" id="rpcStatus">
+                        <i class="fas fa-circle" id="rpcStatusIcon"></i>
+                        <span id="rpcStatusText">Checking...</span>
+                    </div>
+                </div>
             </div>
         </header>
 

@@ -1,9 +1,37 @@
-// RPC Server Configuration
-const RPC_URL = 'https://rpc-testnet.x1.wiki';
+// Dynamic RPC configuration
+let CURRENT_RPC_URL = 'https://rpc-testnet.x1.wiki'; // Default
 
 class X1RPC {
-    constructor(url) {
-        this.url = url;
+    constructor(url = null) {
+        this.url = url || CURRENT_RPC_URL;
+    }
+
+    // Update RPC URL
+    updateUrl(newUrl) {
+        this.url = newUrl;
+        CURRENT_RPC_URL = newUrl;
+        console.log('RPC URL updated to:', newUrl);
+    }
+
+    // Get current URL
+    getCurrentUrl() {
+        return this.url;
+    }
+
+    // Test RPC connection
+    async testConnection() {
+        try {
+            const result = await this.call('getHealth');
+            return { connected: true, result };
+        } catch (error) {
+            try {
+                // Fallback: try getSlot if getHealth fails
+                const result = await this.call('getSlot');
+                return { connected: true, result };
+            } catch (fallbackError) {
+                return { connected: false, error: fallbackError.message };
+            }
+        }
     }
 
     // Generic RPC call method
@@ -286,4 +314,4 @@ class X1RPC {
 }
 
 // Create RPC instance
-const rpc = new X1RPC(RPC_URL);
+const rpc = new X1RPC();
