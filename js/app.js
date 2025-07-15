@@ -121,33 +121,55 @@ class X1Explorer {
         const statusClass = tx.meta?.err ? 'error' : 'success';
         const blockTime = tx.blockTime ? new Date(tx.blockTime * 1000).toLocaleString('en-US') : 'N/A';
         
-        // Handle different encoding formats for transaction data
+        // Handle different encoding formats for transaction data - with safe defaults
         let signature = '';
         let accountKeys = [];
         let instructions = [];
         
-        if (tx.transaction) {
-            if (tx.transaction.signatures) {
-                signature = tx.transaction.signatures[0];
+        try {
+            if (tx.transaction) {
+                if (tx.transaction.signatures && Array.isArray(tx.transaction.signatures)) {
+                    signature = tx.transaction.signatures[0] || '';
+                }
+                
+                if (tx.transaction.message) {
+                    accountKeys = tx.transaction.message.accountKeys || [];
+                    instructions = tx.transaction.message.instructions || [];
+                    
+                    // Ensure these are arrays
+                    if (!Array.isArray(accountKeys)) accountKeys = [];
+                    if (!Array.isArray(instructions)) instructions = [];
+                }
             }
-            
-            if (tx.transaction.message) {
-                accountKeys = tx.transaction.message.accountKeys || [];
-                instructions = tx.transaction.message.instructions || [];
-            }
+        } catch (e) {
+            console.error('Error parsing transaction data:', e);
+            // Reset to safe defaults
+            signature = tx.transaction?.signatures?.[0] || 'Unknown';
+            accountKeys = [];
+            instructions = [];
         }
 
         const logMessages = tx.meta?.logMessages || [];
+        // Ensure logMessages is an array
+        const safeLogMessages = Array.isArray(logMessages) ? logMessages : [];
         
-        // Format account keys
+        // Format account keys with safety checks
         const formatAccountKeys = () => {
-            if (accountKeys.length === 0) return '<p><i class="fas fa-info-circle"></i> No account keys found</p>';
+            if (!Array.isArray(accountKeys) || accountKeys.length === 0) {
+                return '<p><i class="fas fa-info-circle"></i> No account keys found</p>';
+            }
             
             return accountKeys.map((account, index) => {
-                // Handle both string format and object format
-                const address = typeof account === 'string' ? account : account.pubkey;
-                const signer = typeof account === 'object' && account.signer ? ' <i class="fas fa-key" title="Signer"></i>' : '';
-                const writable = typeof account === 'object' && account.writable ? ' <i class="fas fa-edit" title="Writable"></i>' : '';
+                // Handle both string format and object format safely
+                let address = 'Unknown';
+                if (typeof account === 'string') {
+                    address = account;
+                } else if (account && typeof account === 'object') {
+                    address = account.pubkey || account.address || 'Unknown';
+                }
+                
+                const signer = (typeof account === 'object' && account?.signer) ? ' <i class="fas fa-key" title="Signer"></i>' : '';
+                const writable = (typeof account === 'object' && account?.writable) ? ' <i class="fas fa-edit" title="Writable"></i>' : '';
                 
                 return `<div class="account-item">
                     <span class="account-index">#${index}:</span>
@@ -157,11 +179,15 @@ class X1Explorer {
             }).join('');
         };
 
-        // Format instructions
+        // Format instructions with safety checks
         const formatInstructions = () => {
-            if (instructions.length === 0) return '<p><i class="fas fa-info-circle"></i> No instructions found</p>';
+            if (!Array.isArray(instructions) || instructions.length === 0) {
+                return '<p><i class="fas fa-info-circle"></i> No instructions found</p>';
+            }
             
             return instructions.map((instruction, index) => {
+                if (!instruction) return '';
+                
                 // Handle different instruction formats (parsed vs raw)
                 let programId = '';
                 let programName = '';
@@ -169,29 +195,39 @@ class X1Explorer {
                 let accounts = [];
                 let data = '';
 
-                if (instruction.parsed) {
-                    // Parsed instruction format
-                    programId = instruction.program || 'Unknown';
-                    programName = instruction.programId || programId;
-                    instructionType = instruction.parsed.type || 'Unknown';
-                    
-                    if (instruction.parsed.info) {
-                        const info = instruction.parsed.info;
-                        // Extract key information based on instruction type
-                        if (info.source) accounts.push(`<i class="fas fa-arrow-right"></i> Source: ${info.source}`);
-                        if (info.destination) accounts.push(`<i class="fas fa-arrow-left"></i> Destination: ${info.destination}`);
-                        if (info.authority) accounts.push(`<i class="fas fa-shield-alt"></i> Authority: ${info.authority}`);
-                        if (info.amount) accounts.push(`<i class="fas fa-coins"></i> Amount: ${info.amount}`);
-                        if (info.mint) accounts.push(`<i class="fas fa-coins"></i> Mint: ${info.mint}`);
+                try {
+                    if (instruction.parsed) {
+                        // Parsed instruction format
+                        programId = instruction.program || 'Unknown';
+                        programName = instruction.programId || programId;
+                        instructionType = instruction.parsed.type || 'Unknown';
+                        
+                        if (instruction.parsed.info) {
+                            const info = instruction.parsed.info;
+                            // Extract key information based on instruction type
+                            if (info.source) accounts.push(`<i class="fas fa-arrow-right"></i> Source: ${info.source}`);
+                            if (info.destination) accounts.push(`<i class="fas fa-arrow-left"></i> Destination: ${info.destination}`);
+                            if (info.authority) accounts.push(`<i class="fas fa-shield-alt"></i> Authority: ${info.authority}`);
+                            if (info.amount) accounts.push(`<i class="fas fa-coins"></i> Amount: ${info.amount}`);
+                            if (info.mint) accounts.push(`<i class="fas fa-coins"></i> Mint: ${info.mint}`);
+                        }
+                    } else {
+                        // Raw instruction format
+                        programId = instruction.programIdIndex !== undefined ? 
+                            `Account Index: ${instruction.programIdIndex}` : 'Unknown';
+                        accounts = (instruction.accounts && Array.isArray(instruction.accounts)) ? 
+                            instruction.accounts.map(acc => `<i class="fas fa-user"></i> Account Index: ${acc}`) : [];
+                        data = instruction.data || '';
                     }
-                } else {
-                    // Raw instruction format
-                    programId = instruction.programIdIndex !== undefined ? 
-                        `Account Index: ${instruction.programIdIndex}` : 'Unknown';
-                    accounts = instruction.accounts ? 
-                        instruction.accounts.map(acc => `<i class="fas fa-user"></i> Account Index: ${acc}`) : [];
-                    data = instruction.data || '';
+                } catch (e) {
+                    console.error('Error parsing instruction:', e);
+                    programId = 'Error parsing instruction';
+                    accounts = [];
+                    data = '';
                 }
+
+                // Ensure accounts is an array
+                if (!Array.isArray(accounts)) accounts = [];
 
                 return `<div class="instruction-item">
                     <div class="instruction-header">
@@ -207,27 +243,36 @@ class X1Explorer {
             }).join('');
         };
 
-        // Format log messages
+        // Format log messages with safety checks
         const formatLogMessages = () => {
-            if (logMessages.length === 0) return '<p><i class="fas fa-info-circle"></i> No log messages</p>';
+            if (!Array.isArray(safeLogMessages) || safeLogMessages.length === 0) {
+                return '<p><i class="fas fa-info-circle"></i> No log messages</p>';
+            }
             
-            return logMessages.map((message, index) => {
+            return safeLogMessages.map((message, index) => {
+                const safeMessage = message || '';
                 // Add appropriate icon based on message content
                 let icon = 'fas fa-info';
-                if (message.toLowerCase().includes('error')) {
+                if (safeMessage.toLowerCase().includes('error')) {
                     icon = 'fas fa-exclamation-triangle';
-                } else if (message.toLowerCase().includes('success')) {
+                } else if (safeMessage.toLowerCase().includes('success')) {
                     icon = 'fas fa-check-circle';
-                } else if (message.toLowerCase().includes('invoke')) {
+                } else if (safeMessage.toLowerCase().includes('invoke')) {
                     icon = 'fas fa-play';
                 }
                 
                 return `<div class="log-item">
                     <span class="log-index">#${index + 1}:</span>
-                    <span class="log-message"><i class="${icon}"></i> ${message}</span>
+                    <span class="log-message"><i class="${icon}"></i> ${safeMessage}</span>
                 </div>`;
             }).join('');
         };
+        
+        // Ensure we have safe values for template strings
+        const safeAccountKeysLength = Array.isArray(accountKeys) ? accountKeys.length : 0;
+        const safeInstructionsLength = Array.isArray(instructions) ? instructions.length : 0;
+        const safeLogMessagesLength = Array.isArray(safeLogMessages) ? safeLogMessages.length : 0;
+        const safeSignature = signature || 'Unknown';
         
         return `
             <div class="result-header">
@@ -237,7 +282,7 @@ class X1Explorer {
                 </span>
             </div>
             <div class="result-details">
-                <p><strong><i class="fas fa-signature"></i> Signature:</strong> <code>${signature}</code></p>
+                <p><strong><i class="fas fa-signature"></i> Signature:</strong> <code>${safeSignature}</code></p>
                 <p><strong><i class="fas fa-clock"></i> Block Time:</strong> ${blockTime}</p>
                 <p><strong><i class="fas fa-layer-group"></i> Block Height:</strong> ${tx.slot || 'N/A'}</p>
                 <p><strong><i class="fas fa-dollar-sign"></i> Fee:</strong> ${tx.meta?.fee || 0} lamports</p>
@@ -249,30 +294,30 @@ class X1Explorer {
                 
                 <!-- Account Details -->
                 <div class="expandable-section">
-                    <h5 class="section-header" onclick="toggleSection('accounts-${signature.slice(-8)}')">
-                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-users"></i> Account Count: ${accountKeys.length}
+                    <h5 class="section-header" onclick="toggleSection('accounts-${safeSignature.slice(-8)}')">
+                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-users"></i> Account Count: ${safeAccountKeysLength}
                     </h5>
-                    <div id="accounts-${signature.slice(-8)}" class="section-content">
+                    <div id="accounts-${safeSignature.slice(-8)}" class="section-content">
                         ${formatAccountKeys()}
                     </div>
                 </div>
 
                 <!-- Instruction Details -->
                 <div class="expandable-section">
-                    <h5 class="section-header" onclick="toggleSection('instructions-${signature.slice(-8)}')">
-                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-cogs"></i> Instruction Count: ${instructions.length}
+                    <h5 class="section-header" onclick="toggleSection('instructions-${safeSignature.slice(-8)}')">
+                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-cogs"></i> Instruction Count: ${safeInstructionsLength}
                     </h5>
-                    <div id="instructions-${signature.slice(-8)}" class="section-content">
+                    <div id="instructions-${safeSignature.slice(-8)}" class="section-content">
                         ${formatInstructions()}
                     </div>
                 </div>
 
                 <!-- Log Messages -->
                 <div class="expandable-section">
-                    <h5 class="section-header" onclick="toggleSection('logs-${signature.slice(-8)}')">
-                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-list-alt"></i> Log Messages: ${logMessages.length}
+                    <h5 class="section-header" onclick="toggleSection('logs-${safeSignature.slice(-8)}')">
+                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-list-alt"></i> Log Messages: ${safeLogMessagesLength}
                     </h5>
-                    <div id="logs-${signature.slice(-8)}" class="section-content">
+                    <div id="logs-${safeSignature.slice(-8)}" class="section-content">
                         ${formatLogMessages()}
                     </div>
                 </div>
@@ -312,15 +357,35 @@ class X1Explorer {
     }
 
     formatProgramResult(program, programId) {
+        // Handle case where program data might be undefined or null
+        if (!program) {
+            return `
+                <div class="result-header">
+                    <h4><i class="fas fa-code"></i> Program</h4>
+                    <span class="address">${programId}</span>
+                </div>
+                <div class="result-details">
+                    <p><strong><i class="fas fa-address-card"></i> Program ID:</strong> <code>${programId}</code></p>
+                    <p><strong><i class="fas fa-info-circle"></i> Status:</strong> Program not found or inactive</p>
+                </div>
+            `;
+        }
+
+        const balance = program.lamports ? (program.lamports / 1e9).toFixed(9) : '0';
+        const dataLength = program.data ? (Array.isArray(program.data) ? program.data[0].length : program.data.length) : 0;
+        
         return `
             <div class="result-header">
-                <h4>Program</h4>
+                <h4><i class="fas fa-code"></i> Program</h4>
                 <span class="address">${programId}</span>
             </div>
             <div class="result-details">
-                <p><strong>Program ID:</strong> <code>${programId}</code></p>
-                <p><strong>Account Count:</strong> ${program.length}</p>
-                <p><strong>Type:</strong> Program Account</p>
+                <p><strong><i class="fas fa-address-card"></i> Program ID:</strong> <code>${programId}</code></p>
+                <p><strong><i class="fas fa-wallet"></i> Balance:</strong> ${balance} SOL</p>
+                <p><strong><i class="fas fa-user-tie"></i> Owner:</strong> <code>${program.owner || 'Unknown'}</code></p>
+                <p><strong><i class="fas fa-database"></i> Data Length:</strong> ${dataLength} bytes</p>
+                <p><strong><i class="fas fa-play"></i> Executable:</strong> <i class="fas fa-check-circle" style="color: #28a745;"></i> Yes</p>
+                <p><strong><i class="fas fa-shield-alt"></i> Rent Exempt:</strong> ${program.lamports > 0 ? '✓ Yes' : '✗ No'}</p>
             </div>
         `;
     }

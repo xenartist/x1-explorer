@@ -39,10 +39,34 @@ class X1RPC {
         }
     }
 
-    // Get account information
+    // Get account information with base64 encoding for program accounts
     async getAccountInfo(address) {
+        try {
+            // First try with base64 encoding (for programs with large data)
+            return await this.call('getAccountInfo', [address, { 
+                encoding: 'base64',
+                commitment: 'confirmed'
+            }]);
+        } catch (error) {
+            console.log('Base64 account info failed, trying jsonParsed:', error.message);
+            // Fallback to jsonParsed for smaller accounts
+            try {
+                return await this.call('getAccountInfo', [address, { 
+                    encoding: 'jsonParsed',
+                    commitment: 'confirmed'
+                }]);
+            } catch (fallbackError) {
+                console.log('JsonParsed account info also failed:', fallbackError.message);
+                throw fallbackError;
+            }
+        }
+    }
+
+    // Alternative method to get account info with specific encoding
+    async getAccountInfoWithEncoding(address, encoding = 'base64') {
         return await this.call('getAccountInfo', [address, { 
-            encoding: 'jsonParsed' 
+            encoding: encoding,
+            commitment: 'confirmed'
         }]);
     }
 
@@ -74,12 +98,12 @@ class X1RPC {
         }]);
     }
 
-    // Get latest block height
+    // Get current slot
     async getSlot() {
         return await this.call('getSlot');
     }
 
-    // Get multiple blocks information
+    // Get blocks 
     async getBlocks(startSlot, endSlot) {
         return await this.call('getBlocks', [startSlot, endSlot]);
     }
@@ -89,17 +113,12 @@ class X1RPC {
         return await this.call('getProgramAccounts', [programId]);
     }
 
-    // Get token balance
-    async getTokenAccountBalance(address) {
-        return await this.call('getTokenAccountBalance', [address]);
-    }
-
     // Get token supply
     async getTokenSupply(mint) {
         return await this.call('getTokenSupply', [mint]);
     }
 
-    // Get recent performance samples
+    // Get recent performance samples for TPS calculation
     async getRecentPerformanceSamples(limit = 1) {
         return await this.call('getRecentPerformanceSamples', [limit]);
     }
@@ -201,17 +220,29 @@ class X1RPC {
                 }
             }
 
-            // Try searching as account address
+            // Try searching as account address (now with base64 support)
             try {
                 console.log('Trying account search:', cleanQuery);
                 const accountInfo = await this.getAccountInfo(cleanQuery);
                 if (accountInfo && accountInfo.value) {
                     console.log('Account search successful:', accountInfo);
-                    searchResults.push({
-                        type: 'account',
-                        data: accountInfo,
-                        query: cleanQuery
-                    });
+                    
+                    // Check if this account is executable (i.e., a program)
+                    if (accountInfo.value.executable) {
+                        // This is a program account
+                        searchResults.push({
+                            type: 'program',
+                            data: accountInfo.value,
+                            query: cleanQuery
+                        });
+                    } else {
+                        // Regular account
+                        searchResults.push({
+                            type: 'account',
+                            data: accountInfo,
+                            query: cleanQuery
+                        });
+                    }
                 }
             } catch (e) {
                 console.log('Account search failed:', e.message);
@@ -254,5 +285,5 @@ class X1RPC {
     }
 }
 
-// Create global RPC instance
+// Create RPC instance
 const rpc = new X1RPC(RPC_URL);
