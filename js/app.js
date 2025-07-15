@@ -1,14 +1,19 @@
 class X1Explorer {
     constructor() {
+        this.tpsData = null;
         this.init();
     }
 
     init() {
         this.bindEvents();
         this.loadRecentBlocks();
+        this.loadTPS();
         
         // Update recent blocks every 30 seconds
         setInterval(() => this.loadRecentBlocks(), 30000);
+        
+        // Update TPS more frequently - every 15 seconds since it's faster now
+        setInterval(() => this.loadTPS(), 15000);
     }
 
     bindEvents() {
@@ -265,6 +270,85 @@ class X1Explorer {
         }
     }
 
+    async loadTPS() {
+        try {
+            this.showTPSLoading();
+            
+            let tpsData;
+            try {
+                // Try to get TPS from latest two blocks
+                tpsData = await rpc.getLatestBlockTPS();
+            } catch (error) {
+                console.log('Failed to get latest block TPS, using estimated TPS:', error.message);
+                // Fallback to estimated TPS
+                tpsData = await rpc.getEstimatedTPS();
+            }
+            
+            this.tpsData = tpsData;
+            this.displayTPS(tpsData);
+        } catch (error) {
+            console.error('Failed to load TPS:', error);
+            this.displayTPSError();
+        }
+    }
+
+    displayTPS(tpsData) {
+        const tpsContainer = document.getElementById('tpsContainer');
+        
+        if (tpsData.error) {
+            tpsContainer.innerHTML = `
+                <div class="tps-error">
+                    <span class="tps-label">TPS:</span>
+                    <span class="tps-value">Error</span>
+                </div>
+            `;
+            return;
+        }
+
+        const tpsValue = tpsData.tps.toFixed(1);
+        const tpsClass = this.getTPSClass(tpsData.tps);
+        const blockTime = tpsData.blockTime.toFixed(2);
+        
+        tpsContainer.innerHTML = `
+            <div class="tps-display ${tpsClass}">
+                <span class="tps-label">Current TPS:</span>
+                <span class="tps-value">${tpsValue}</span>
+            </div>
+            <div class="tps-details">
+                <small>
+                    ${tpsData.transactionCount} txns in ${blockTime}s
+                    ${tpsData.isEstimated ? ' (estimated)' : ''}
+                </small>
+            </div>
+        `;
+    }
+
+    getTPSClass(tps) {
+        if (tps > 1000) return 'tps-high';
+        if (tps > 100) return 'tps-medium';
+        return 'tps-low';
+    }
+
+    showTPSLoading() {
+        const tpsContainer = document.getElementById('tpsContainer');
+        tpsContainer.innerHTML = `
+            <div class="tps-loading">
+                <div class="small-spinner"></div>
+                <span>Calculating TPS...</span>
+            </div>
+        `;
+    }
+
+    displayTPSError() {
+        const tpsContainer = document.getElementById('tpsContainer');
+        tpsContainer.innerHTML = `
+            <div class="tps-error">
+                <span class="tps-label">TPS:</span>
+                <span class="tps-value">Error</span>
+            </div>
+        `;
+    }
+
     // Add new methods for blocks loading state
     showBlocksLoading() {
         const recentBlocksSection = document.querySelector('.recent-blocks');
@@ -299,11 +383,19 @@ class X1Explorer {
         const blockTime = block.blockTime ? new Date(block.blockTime * 1000).toLocaleString('en-US') : 'N/A';
         const txCount = block.transactions?.length || 0;
         
+        // Calculate TPS for this block if we have the data
+        let tpsInfo = '';
+        if (block.transactions && this.tpsData && this.tpsData.currentSlot === slot) {
+            const blockTPS = this.tpsData.tps.toFixed(1);
+            tpsInfo = `<span class="block-tps">${blockTPS} TPS</span>`;
+        }
+        
         div.innerHTML = `
             <div class="block-info">
                 <span class="block-number">#${slot}</span>
                 <span class="block-time">${blockTime}</span>
                 <span class="block-txs">${txCount} txns</span>
+                ${tpsInfo}
             </div>
             <div class="block-hash">
                 <small>Hash: ${block.blockhash}</small>

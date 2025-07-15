@@ -46,7 +46,15 @@
 
         <!-- Recent Blocks -->
         <div class="recent-blocks">
-            <h3>Recent Blocks</h3>
+            <div class="blocks-header">
+                <h3>Recent Blocks</h3>
+                <div id="tpsContainer" class="tps-container">
+                    <div class="tps-loading">
+                        <div class="small-spinner"></div>
+                        <span>Calculating TPS...</span>
+                    </div>
+                </div>
+            </div>
             <div id="recentBlocksList" class="blocks-list">
                 <!-- Initial placeholder while first load -->
                 <div class="initial-loading">
