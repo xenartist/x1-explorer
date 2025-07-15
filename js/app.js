@@ -1,6 +1,5 @@
 class X1Explorer {
     constructor() {
-        this.currentFilter = 'all';
         this.init();
     }
 
@@ -15,7 +14,6 @@ class X1Explorer {
     bindEvents() {
         const searchBtn = document.getElementById('searchBtn');
         const searchInput = document.getElementById('searchInput');
-        const filterBtns = document.querySelectorAll('.filter-btn');
 
         // Search button click
         searchBtn.addEventListener('click', () => this.performSearch());
@@ -25,15 +23,6 @@ class X1Explorer {
             if (e.key === 'Enter') {
                 this.performSearch();
             }
-        });
-
-        // Filter button click
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.currentFilter = btn.dataset.type;
-            });
         });
     }
 
@@ -64,20 +53,17 @@ class X1Explorer {
         const resultContent = document.getElementById('resultContent');
         const resultType = document.getElementById('resultType');
 
-        // Filter results based on current filter
-        const filteredResults = this.currentFilter === 'all' 
-            ? results 
-            : results.filter(r => r.type === this.currentFilter);
-
-        if (filteredResults.length === 0) {
+        // Show all results without filtering
+        if (results.length === 0) {
             this.showError('No matching results found');
             return;
         }
 
-        resultType.textContent = this.getTypeLabel(filteredResults[0].type);
+        // Set result type based on the first result
+        resultType.textContent = this.getTypeLabel(results[0].type);
         resultContent.innerHTML = '';
 
-        filteredResults.forEach(result => {
+        results.forEach(result => {
             const resultElement = this.createResultElement(result);
             resultContent.appendChild(resultElement);
         });
@@ -279,6 +265,33 @@ class X1Explorer {
         }
     }
 
+    // Add new methods for blocks loading state
+    showBlocksLoading() {
+        const recentBlocksSection = document.querySelector('.recent-blocks');
+        const existingIndicator = recentBlocksSection.querySelector('.blocks-loading-indicator');
+        
+        // Don't add multiple loading indicators
+        if (existingIndicator) return;
+        
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'blocks-loading-indicator';
+        loadingIndicator.innerHTML = `
+            <div class="small-spinner"></div>
+            <span>Updating...</span>
+        `;
+        
+        // Insert the loading indicator after the h3 title
+        const title = recentBlocksSection.querySelector('h3');
+        title.insertAdjacentElement('afterend', loadingIndicator);
+    }
+
+    hideBlocksLoading() {
+        const loadingIndicator = document.querySelector('.blocks-loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
+    }
+
     createBlockElement(block, slot) {
         const div = document.createElement('div');
         div.className = 'block-item';
@@ -398,33 +411,6 @@ class X1Explorer {
                 document.body.removeChild(notification);
             }, 300);
         }, 2000);
-    }
-
-    // Add new methods for blocks loading state
-    showBlocksLoading() {
-        const recentBlocksSection = document.querySelector('.recent-blocks');
-        const existingIndicator = recentBlocksSection.querySelector('.blocks-loading-indicator');
-        
-        // Don't add multiple loading indicators
-        if (existingIndicator) return;
-        
-        const loadingIndicator = document.createElement('div');
-        loadingIndicator.className = 'blocks-loading-indicator';
-        loadingIndicator.innerHTML = `
-            <div class="small-spinner"></div>
-            <span>Updating...</span>
-        `;
-        
-        // Insert the loading indicator after the h3 title
-        const title = recentBlocksSection.querySelector('h3');
-        title.insertAdjacentElement('afterend', loadingIndicator);
-    }
-
-    hideBlocksLoading() {
-        const loadingIndicator = document.querySelector('.blocks-loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.remove();
-        }
     }
 }
 
