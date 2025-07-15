@@ -154,12 +154,14 @@ body {
 
 .tps-item {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    padding: 12px 8px;
+    justify-content: space-between;
+    padding: 8px 12px;
     border-radius: 6px;
     transition: all 0.3s ease;
     border: 1px solid transparent;
+    min-height: 40px;
 }
 
 .tps-item.tps-high {
@@ -187,16 +189,18 @@ body {
 }
 
 .tps-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
-    margin-bottom: 4px;
-    text-align: center;
+    text-align: left;
+    margin: 0;
+    flex-shrink: 0;
 }
 
 .tps-value {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
-    text-align: center;
+    text-align: right;
+    margin: 0; 
 }
 
 /* Search container */
@@ -467,16 +471,16 @@ code {
     }
     
     .tps-item {
-        padding: 8px 6px;
+        padding: 6px 10px;
+        min-height: 35px;
     }
     
     .tps-label {
-        font-size: 10px;
-        margin-bottom: 2px;
+        font-size: 11px;
     }
     
     .tps-value {
-        font-size: 16px;
+        font-size: 14px;
     }
     
     .search-box {
