@@ -22,6 +22,16 @@
                 <input type="text" id="searchInput" placeholder="Search addresses, transaction hash, block number, programs or tokens..." />
                 <button id="searchBtn">Search</button>
             </div>
+            
+            <!-- Network Status -->
+            <div class="network-status">
+                <div id="tpsContainer" class="tps-container">
+                    <div class="tps-loading">
+                        <div class="small-spinner"></div>
+                        <span>Calculating TPS...</span>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- Loading State -->
@@ -42,26 +52,6 @@
                 <span id="resultType" class="result-type"></span>
             </div>
             <div id="resultContent" class="result-content"></div>
-        </div>
-
-        <!-- Recent Blocks -->
-        <div class="recent-blocks">
-            <div class="blocks-header">
-                <h3>Recent Blocks</h3>
-                <div id="tpsContainer" class="tps-container">
-                    <div class="tps-loading">
-                        <div class="small-spinner"></div>
-                        <span>Calculating TPS...</span>
-                    </div>
-                </div>
-            </div>
-            <div id="recentBlocksList" class="blocks-list">
-                <!-- Initial placeholder while first load -->
-                <div class="initial-loading">
-                    <div class="small-spinner"></div>
-                    <span>Loading recent blocks...</span>
-                </div>
-            </div>
         </div>
     </div>
 

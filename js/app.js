@@ -6,13 +6,9 @@ class X1Explorer {
 
     init() {
         this.bindEvents();
-        this.loadRecentBlocks();
         this.loadTPS();
         
-        // Update recent blocks every 30 seconds
-        setInterval(() => this.loadRecentBlocks(), 30000);
-        
-        // Update TPS more frequently - every 15 seconds since it's faster now
+        // Update TPS every 15 seconds
         setInterval(() => this.loadTPS(), 15000);
     }
 
@@ -223,53 +219,6 @@ class X1Explorer {
         `;
     }
 
-    async loadRecentBlocks() {
-        try {
-            // Show small loading indicator without clearing existing blocks
-            this.showBlocksLoading();
-            
-            const currentSlot = await rpc.getSlot();
-            const blockElements = [];
-            
-            // Get latest 5 blocks
-            for (let i = 0; i < 5; i++) {
-                const slot = currentSlot - i;
-                try {
-                    const block = await rpc.getBlock(slot);
-                    if (block) {
-                        const blockElement = this.createBlockElement(block, slot);
-                        blockElements.push(blockElement);
-                    }
-                } catch (e) {
-                    console.log(`Failed to get block ${slot}:`, e.message);
-                    // If fetch fails, create a placeholder element
-                    const placeholderElement = this.createBlockPlaceholder(slot);
-                    blockElements.push(placeholderElement);
-                }
-            }
-            
-            // Only update the blocks list after all data is loaded
-            const blocksList = document.getElementById('recentBlocksList');
-            blocksList.innerHTML = '';
-            blockElements.forEach(element => {
-                blocksList.appendChild(element);
-            });
-            
-            // Hide loading indicator
-            this.hideBlocksLoading();
-            
-        } catch (error) {
-            console.error('Failed to load recent blocks:', error);
-            this.hideBlocksLoading();
-            
-            // Only show error if there are no existing blocks
-            const blocksList = document.getElementById('recentBlocksList');
-            if (blocksList.children.length === 0) {
-                blocksList.innerHTML = '<div class="error-blocks">Failed to load, please try again later</div>';
-            }
-        }
-    }
-
     async loadTPS() {
         try {
             this.showTPSLoading();
@@ -311,7 +260,7 @@ class X1Explorer {
         
         tpsContainer.innerHTML = `
             <div class="tps-display ${tpsClass}">
-                <span class="tps-label">Current TPS:</span>
+                <span class="tps-label">Network TPS:</span>
                 <span class="tps-value">${tpsValue}</span>
             </div>
             <div class="tps-details">
@@ -347,80 +296,6 @@ class X1Explorer {
                 <span class="tps-value">Error</span>
             </div>
         `;
-    }
-
-    // Add new methods for blocks loading state
-    showBlocksLoading() {
-        const recentBlocksSection = document.querySelector('.recent-blocks');
-        const existingIndicator = recentBlocksSection.querySelector('.blocks-loading-indicator');
-        
-        // Don't add multiple loading indicators
-        if (existingIndicator) return;
-        
-        const loadingIndicator = document.createElement('div');
-        loadingIndicator.className = 'blocks-loading-indicator';
-        loadingIndicator.innerHTML = `
-            <div class="small-spinner"></div>
-            <span>Updating...</span>
-        `;
-        
-        // Insert the loading indicator after the h3 title
-        const title = recentBlocksSection.querySelector('h3');
-        title.insertAdjacentElement('afterend', loadingIndicator);
-    }
-
-    hideBlocksLoading() {
-        const loadingIndicator = document.querySelector('.blocks-loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.remove();
-        }
-    }
-
-    createBlockElement(block, slot) {
-        const div = document.createElement('div');
-        div.className = 'block-item';
-        
-        const blockTime = block.blockTime ? new Date(block.blockTime * 1000).toLocaleString('en-US') : 'N/A';
-        const txCount = block.transactions?.length || 0;
-        
-        // Calculate TPS for this block if we have the data
-        let tpsInfo = '';
-        if (block.transactions && this.tpsData && this.tpsData.currentSlot === slot) {
-            const blockTPS = this.tpsData.tps.toFixed(1);
-            tpsInfo = `<span class="block-tps">${blockTPS} TPS</span>`;
-        }
-        
-        div.innerHTML = `
-            <div class="block-info">
-                <span class="block-number">#${slot}</span>
-                <span class="block-time">${blockTime}</span>
-                <span class="block-txs">${txCount} txns</span>
-                ${tpsInfo}
-            </div>
-            <div class="block-hash">
-                <small>Hash: ${block.blockhash}</small>
-            </div>
-        `;
-        
-        div.addEventListener('click', () => {
-            document.getElementById('searchInput').value = slot;
-            this.performSearch();
-        });
-        
-        return div;
-    }
-
-    createBlockPlaceholder(slot) {
-        const div = document.createElement('div');
-        div.className = 'block-item placeholder';
-        div.innerHTML = `
-            <div class="block-info">
-                <span class="block-number">#${slot}</span>
-                <span class="block-time">Load failed</span>
-                <span class="block-txs">- txns</span>
-            </div>
-        `;
-        return div;
     }
 
     getTypeLabel(type) {
