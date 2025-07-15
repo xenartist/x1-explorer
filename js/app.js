@@ -5,6 +5,9 @@ class X1Explorer {
     }
 
     init() {
+        // Store global reference for transaction search
+        window.x1Explorer = this;
+        
         this.bindEvents();
         this.loadTPS();
         
@@ -101,6 +104,102 @@ class X1Explorer {
 
     formatBlockResult(block) {
         const blockTime = new Date(block.blockTime * 1000).toLocaleString('en-US');
+        const transactions = block.transactions || [];
+        const transactionCount = transactions.length;
+        
+        // Format transactions list with pagination
+        const formatTransactionsList = () => {
+            if (transactionCount === 0) {
+                return '<p><i class="fas fa-info-circle"></i> No transactions in this block</p>';
+            }
+            
+            // Create pagination for transactions (show 20 per page)
+            const pageSize = 20;
+            const totalPages = Math.ceil(transactionCount / pageSize);
+            
+            let paginationHTML = '';
+            let transactionsHTML = '';
+            
+            // Generate pagination controls if needed
+            if (totalPages > 1) {
+                paginationHTML = `
+                    <div class="pagination-controls">
+                        <button onclick="showTransactionPage('${block.blockhash}', 1, ${pageSize}, ${transactionCount})" class="pagination-btn active" data-page="1">1</button>
+                        ${totalPages > 1 ? `<button onclick="showTransactionPage('${block.blockhash}', 2, ${pageSize}, ${transactionCount})" class="pagination-btn" data-page="2">2</button>` : ''}
+                        ${totalPages > 2 ? `<button onclick="showTransactionPage('${block.blockhash}', 3, ${pageSize}, ${transactionCount})" class="pagination-btn" data-page="3">3</button>` : ''}
+                        ${totalPages > 3 ? '<span class="pagination-dots">...</span>' : ''}
+                        ${totalPages > 3 ? `<button onclick="showTransactionPage('${block.blockhash}', ${totalPages}, ${pageSize}, ${transactionCount})" class="pagination-btn" data-page="${totalPages}">${totalPages}</button>` : ''}
+                    </div>
+                `;
+            }
+            
+            // Generate first page of transactions
+            const firstPageTransactions = transactions.slice(0, pageSize);
+            transactionsHTML = firstPageTransactions.map((tx, index) => {
+                // Extract transaction signature
+                let signature = 'Unknown';
+                if (tx.transaction && tx.transaction.signatures && tx.transaction.signatures.length > 0) {
+                    signature = tx.transaction.signatures[0];
+                }
+                
+                // Extract transaction status
+                const status = tx.meta?.err ? 'Failed' : 'Success';
+                const statusClass = tx.meta?.err ? 'tx-failed' : 'tx-success';
+                
+                // Extract fee
+                const fee = tx.meta?.fee || 0;
+                
+                // Extract compute units
+                const computeUnits = tx.meta?.computeUnitsConsumed || 0;
+                
+                // Count instructions
+                const instructionCount = tx.transaction?.message?.instructions?.length || 0;
+                
+                return `
+                    <div class="transaction-item" data-signature="${signature}">
+                        <div class="transaction-header">
+                            <div class="transaction-signature">
+                                <i class="fas fa-receipt"></i>
+                                <code class="signature-short" title="${signature}">${signature.slice(0, 8)}...${signature.slice(-8)}</code>
+                                <button class="copy-btn" onclick="copyToClipboard('${signature}')" title="Copy full signature">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <span class="transaction-status ${statusClass}">
+                                <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
+                            </span>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="detail-item">
+                                <i class="fas fa-cogs"></i> Instructions: <strong>${instructionCount}</strong>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-dollar-sign"></i> Fee: <strong>${fee} lamports</strong>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-microchip"></i> Compute: <strong>${computeUnits}</strong>
+                            </div>
+                            <div class="detail-item">
+                                <button class="view-tx-btn" onclick="searchTransaction('${signature}')">
+                                    <i class="fas fa-eye"></i> View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div class="transactions-container">
+                    ${paginationHTML}
+                    <div id="transactions-list-${block.blockhash}" class="transactions-list">
+                        ${transactionsHTML}
+                    </div>
+                    ${totalPages > 1 ? paginationHTML : ''}
+                </div>
+            `;
+        };
+        
         return `
             <div class="result-header">
                 <h4><i class="fas fa-cube"></i> Block #${block.parentSlot + 1}</h4>
@@ -109,9 +208,21 @@ class X1Explorer {
             <div class="result-details">
                 <p><strong><i class="fas fa-fingerprint"></i> Block Hash:</strong> <code>${block.blockhash}</code></p>
                 <p><strong><i class="fas fa-link"></i> Parent Slot:</strong> ${block.parentSlot}</p>
-                <p><strong><i class="fas fa-receipt"></i> Transactions:</strong> ${block.transactions?.length || 0}</p>
+                <p><strong><i class="fas fa-receipt"></i> Transactions:</strong> ${transactionCount}</p>
                 <p><strong><i class="fas fa-gift"></i> Rewards:</strong> ${block.rewards?.length || 0}</p>
                 <p><strong><i class="fas fa-layer-group"></i> Block Height:</strong> ${block.blockHeight || 'N/A'}</p>
+                
+                <!-- Transactions List -->
+                ${transactionCount > 0 ? `
+                <div class="expandable-section">
+                    <h5 class="section-header" onclick="toggleSection('transactions-${block.blockhash}')">
+                        <i class="fas fa-chevron-down toggle-icon"></i> <i class="fas fa-list"></i> Transaction List: ${transactionCount}
+                    </h5>
+                    <div id="transactions-${block.blockhash}" class="section-content">
+                        ${formatTransactionsList()}
+                    </div>
+                </div>
+                ` : ''}
             </div>
         `;
     }
@@ -582,15 +693,75 @@ window.toggleSection = function(sectionId) {
     const header = content.previousElementSibling;
     const icon = header.querySelector('.toggle-icon');
     
-    if (content.style.display === 'none' || content.style.display === '') {
-        content.style.display = 'block';
-        icon.className = 'fas fa-chevron-up toggle-icon';
-        header.classList.add('expanded');
-    } else {
-        content.style.display = 'none';
-        icon.className = 'fas fa-chevron-down toggle-icon';
+    // check current state and switch
+    if (content.classList.contains('expanded')) {
+        // current is expanded, to fold
+        content.classList.remove('expanded');
         header.classList.remove('expanded');
+        icon.classList.remove('expanded');
+        icon.className = 'fas fa-chevron-down toggle-icon';
+    } else {
+        // current is folded, to expand
+        content.classList.add('expanded');
+        header.classList.add('expanded');
+        icon.classList.add('expanded');
+        icon.className = 'fas fa-chevron-up toggle-icon';
     }
+};
+
+// Global function for transaction pagination
+window.showTransactionPage = function(blockHash, page, pageSize, totalTransactions) {
+    const container = document.getElementById(`transactions-list-${blockHash}`);
+    if (!container) return;
+    
+    // Get the block data from the current results (we need to store it)
+    const resultContent = document.getElementById('resultContent');
+    const blockElement = resultContent.querySelector(`[data-block-hash="${blockHash}"]`);
+    
+    // For now, we'll reload the transactions from the stored block data
+    // In a real implementation, you might want to store the block data globally
+    console.log(`Loading page ${page} for block ${blockHash}`);
+    
+    // Update pagination buttons
+    const paginationBtns = container.parentElement.querySelectorAll('.pagination-btn');
+    paginationBtns.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.page == page) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // This is a placeholder - in a full implementation, you'd calculate and display the correct page
+    container.innerHTML = `<p><i class="fas fa-info-circle"></i> Loading page ${page}...</p>`;
+};
+
+// Global function to copy text to clipboard
+window.copyToClipboard = function(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show temporary notification
+        const notification = document.createElement('div');
+        notification.className = 'copy-notification';
+        notification.innerHTML = '<i class="fas fa-check"></i> Copied to clipboard!';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => document.body.removeChild(notification), 300);
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+};
+
+// Global function to search for a specific transaction
+window.searchTransaction = function(signature) {
+    document.getElementById('searchInput').value = signature;
+    const explorer = window.x1Explorer || new X1Explorer();
+    explorer.performSearch();
 };
 
 // Initialize application after page load
