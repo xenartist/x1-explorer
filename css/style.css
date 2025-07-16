@@ -1015,3 +1015,83 @@ code {
         font-size: 12px;
     }
 }
+
+/* Account Transaction Styles */
+.account-transactions-list {
+    margin-top: 10px;
+}
+
+.account-transaction-item {
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    padding: 10px;
+    background-color: #fafafa;
+    transition: all 0.2s ease;
+}
+
+.account-transaction-item:hover {
+    background-color: #f0f8ff;
+    border-color: #007bff;
+}
+
+.tx-index {
+    font-size: 11px;
+    color: #6c757d;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.loading-transactions {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.loading-transactions i {
+    margin-right: 8px;
+}
+
+.error-message {
+    color: #dc3545;
+    padding: 15px;
+    background-color: #f8d7da;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.error-detail {
+    color: #dc3545;
+    font-size: 11px;
+}
+
+.pagination-info {
+    padding: 6px 12px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #495057;
+    margin: 0 8px;
+}
+
+/* Responsive adjustments for account transactions */
+@media (max-width: 768px) {
+    .account-transaction-item {
+        padding: 8px;
+    }
+    
+    .transaction-details {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    
+    .pagination-controls {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .pagination-btn {
+        width: 100%;
+    }
+}

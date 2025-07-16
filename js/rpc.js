@@ -311,6 +311,38 @@ class X1RPC {
     async getSignaturesForAddress(address, limit = 10) {
         return await this.call('getSignaturesForAddress', [address, { limit }]);
     }
+
+    // Get account transaction signatures
+    async getSignaturesForAddress(address, options = {}) {
+        const defaultOptions = {
+            limit: 20, // Default to 20 transactions per page
+            commitment: 'confirmed',
+            ...options
+        };
+        return await this.call('getSignaturesForAddress', [address, defaultOptions]);
+    }
+
+    // Get multiple transactions by signatures
+    async getMultipleTransactions(signatures) {
+        const transactions = [];
+        
+        // Process in batches to avoid overwhelming the RPC
+        const batchSize = 10;
+        for (let i = 0; i < signatures.length; i += batchSize) {
+            const batch = signatures.slice(i, i + batchSize);
+            const batchPromises = batch.map(sig => 
+                this.getTransaction(sig.signature).catch(error => {
+                    console.warn(`Failed to fetch transaction ${sig.signature}:`, error);
+                    return null;
+                })
+            );
+            
+            const batchResults = await Promise.all(batchPromises);
+            transactions.push(...batchResults.filter(tx => tx !== null));
+        }
+        
+        return transactions;
+    }
 }
 
 // Create RPC instance

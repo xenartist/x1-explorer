@@ -521,6 +521,22 @@ class X1Explorer {
 
         const balance = accountData.lamports / 1e9; // Convert to SOL
         
+        // Format account transactions list
+        const formatAccountTransactions = () => {
+            return `
+                <div class="transactions-container">
+                    <div class="pagination-controls" id="account-tx-pagination-${address.slice(-8)}">
+                        <!-- Pagination will be inserted here -->
+                    </div>
+                    <div id="account-transactions-list-${address.slice(-8)}" class="account-transactions-list">
+                        <div class="loading-transactions">
+                            <i class="fas fa-spinner fa-spin"></i> Loading transactions...
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+        
         return `
             <div class="result-header">
                 <h4><i class="fas fa-user"></i> Account</h4>
@@ -532,6 +548,17 @@ class X1Explorer {
                 <p><strong><i class="fas fa-database"></i> Data Length:</strong> ${accountData.data ? accountData.data[0].length : 0} bytes</p>
                 <p><strong><i class="fas fa-play"></i> Executable:</strong> ${accountData.executable ? '✓ Yes' : '✗ No'}</p>
                 <p><strong><i class="fas fa-shield-alt"></i> Rent Exempt:</strong> ${accountData.lamports > 0 ? '✓ Yes' : '✗ No'}</p>
+                
+                <!-- Account Transactions List -->
+                <div class="expandable-section">
+                    <h5 class="section-header" onclick="toggleAccountTransactions('${address}')">
+                        <i class="fas fa-chevron-down toggle-icon" id="account-tx-icon-${address.slice(-8)}"></i> 
+                        <i class="fas fa-list"></i> Transaction History
+                    </h5>
+                    <div id="account-transactions-${address.slice(-8)}" class="section-content">
+                        ${formatAccountTransactions()}
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -832,6 +859,170 @@ window.searchTransaction = function(signature) {
     const explorer = window.x1Explorer || new X1Explorer();
     explorer.performSearch();
 };
+
+// Global function to toggle account transactions
+window.toggleAccountTransactions = async function(address) {
+    const addressShort = address.slice(-8);
+    const content = document.getElementById(`account-transactions-${addressShort}`);
+    const icon = document.getElementById(`account-tx-icon-${addressShort}`);
+    const transactionsList = document.getElementById(`account-transactions-list-${addressShort}`);
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        // Expand and load transactions
+        content.style.display = 'block';
+        icon.className = 'fas fa-chevron-up toggle-icon';
+        
+        // Load first page of transactions if not loaded yet
+        if (transactionsList.innerHTML.includes('Loading transactions...')) {
+            await loadAccountTransactions(address, 1);
+        }
+    } else {
+        // Collapse
+        content.style.display = 'none';
+        icon.className = 'fas fa-chevron-down toggle-icon';
+    }
+};
+
+// Function to load account transactions with pagination
+async function loadAccountTransactions(address, page = 1, pageSize = 20) {
+    const addressShort = address.slice(-8);
+    const transactionsList = document.getElementById(`account-transactions-list-${addressShort}`);
+    const paginationContainer = document.getElementById(`account-tx-pagination-${addressShort}`);
+    
+    try {
+        // Show loading
+        transactionsList.innerHTML = `
+            <div class="loading-transactions">
+                <i class="fas fa-spinner fa-spin"></i> Loading page ${page}...
+            </div>
+        `;
+        
+        // Calculate offset for pagination
+        const before = page > 1 ? window.accountTransactionCache?.[address]?.[(page - 1) * pageSize - 1]?.signature : undefined;
+        
+        // Get transaction signatures
+        const signatures = await rpc.getSignaturesForAddress(address, {
+            limit: pageSize,
+            before: before
+        });
+        
+        if (signatures.length === 0) {
+            transactionsList.innerHTML = '<p><i class="fas fa-info-circle"></i> No transactions found for this account</p>';
+            paginationContainer.innerHTML = '';
+            return;
+        }
+        
+        // Store in cache for pagination
+        if (!window.accountTransactionCache) window.accountTransactionCache = {};
+        if (!window.accountTransactionCache[address]) window.accountTransactionCache[address] = [];
+        
+        // Add to cache
+        const startIndex = (page - 1) * pageSize;
+        signatures.forEach((sig, index) => {
+            window.accountTransactionCache[address][startIndex + index] = sig;
+        });
+        
+        // Generate transaction list HTML
+        const transactionsHTML = signatures.map((sig, index) => {
+            const globalIndex = (page - 1) * pageSize + index;
+            const status = sig.err ? 'Failed' : 'Success';
+            const statusClass = sig.err ? 'tx-failed' : 'tx-success';
+            const blockTime = sig.blockTime ? new Date(sig.blockTime * 1000).toLocaleString('en-US') : 'Unknown';
+            const signature = sig.signature;
+            
+            return `
+                <div class="account-transaction-item" data-signature="${signature}">
+                    <div class="transaction-header">
+                        <div class="transaction-signature">
+                            <span class="tx-index">#${globalIndex + 1}</span>
+                            <i class="fas fa-receipt"></i>
+                            <code class="signature-short" title="${signature}">${signature.slice(0, 8)}...${signature.slice(-8)}</code>
+                            <button class="copy-btn" onclick="copyToClipboard('${signature}')" title="Copy full signature">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <span class="transaction-status ${statusClass}">
+                            <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
+                        </span>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="detail-item">
+                            <i class="fas fa-clock"></i> Time: <strong>${blockTime}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-layer-group"></i> Slot: <strong>${sig.slot || 'N/A'}</strong>
+                        </div>
+                        ${sig.err ? `<div class="detail-item error-detail">
+                            <i class="fas fa-exclamation-triangle"></i> Error: <strong>${JSON.stringify(sig.err)}</strong>
+                        </div>` : ''}
+                        <div class="detail-item">
+                            <button class="view-tx-btn" onclick="searchTransaction('${signature}')">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Update transactions list
+        transactionsList.innerHTML = transactionsHTML;
+        
+        // Generate pagination controls
+        const hasMore = signatures.length === pageSize; // Assume there might be more if we got a full page
+        generateAccountTransactionPagination(address, page, hasMore);
+        
+    } catch (error) {
+        console.error('Failed to load account transactions:', error);
+        transactionsList.innerHTML = `
+            <p class="error-message">
+                <i class="fas fa-exclamation-triangle"></i> 
+                Failed to load transactions: ${error.message}
+            </p>
+        `;
+        paginationContainer.innerHTML = '';
+    }
+}
+
+// Generate pagination controls for account transactions
+function generateAccountTransactionPagination(address, currentPage, hasMore) {
+    const addressShort = address.slice(-8);
+    const paginationContainer = document.getElementById(`account-tx-pagination-${addressShort}`);
+    
+    if (currentPage === 1 && !hasMore) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '<div class="pagination-controls">';
+    
+    // Previous button
+    if (currentPage > 1) {
+        paginationHTML += `
+            <button onclick="loadAccountTransactions('${address}', ${currentPage - 1})" class="pagination-btn">
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+        `;
+    }
+    
+    // Current page indicator
+    paginationHTML += `<span class="pagination-info">Page ${currentPage}</span>`;
+    
+    // Next button
+    if (hasMore) {
+        paginationHTML += `
+            <button onclick="loadAccountTransactions('${address}', ${currentPage + 1})" class="pagination-btn">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+    }
+    
+    paginationHTML += '</div>';
+    paginationContainer.innerHTML = paginationHTML;
+}
+
+// Make loadAccountTransactions globally accessible
+window.loadAccountTransactions = loadAccountTransactions;
 
 // Initialize application after page load
 document.addEventListener('DOMContentLoaded', () => {
