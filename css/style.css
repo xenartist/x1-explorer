@@ -1095,3 +1095,46 @@ code {
         width: 100%;
     }
 }
+
+/* Program Transaction Styles */
+.program-transactions-list {
+    margin-top: 10px;
+}
+
+.program-transaction-item {
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    padding: 10px;
+    background-color: #f8f9ff; /* different background color, indicate this is program transaction */
+    transition: all 0.2s ease;
+    border-left: 3px solid #6f42c1; /* purple left border, distinguish program transaction */
+}
+
+.program-transaction-item:hover {
+    background-color: #f0f4ff;
+    border-color: #6f42c1;
+}
+
+.program-transaction-item .transaction-signature i.fa-code-branch {
+    color: #6f42c1; /* program icon use purple */
+}
+
+.program-transaction-item .detail-item:nth-child(3) {
+    color: #6f42c1;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+/* Responsive adjustments for program transactions */
+@media (max-width: 768px) {
+    .program-transaction-item {
+        padding: 8px;
+        border-left-width: 2px;
+    }
+    
+    .program-transaction-item .transaction-details {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}

@@ -581,6 +581,22 @@ class X1Explorer {
         const balance = program.lamports ? (program.lamports / 1e9).toFixed(9) : '0';
         const dataLength = program.data ? (Array.isArray(program.data) ? program.data[0].length : program.data.length) : 0;
         
+        // Format program transactions list
+        const formatProgramTransactions = () => {
+            return `
+                <div class="transactions-container">
+                    <div class="pagination-controls" id="program-tx-pagination-${programId.slice(-8)}">
+                        <!-- Pagination will be inserted here -->
+                    </div>
+                    <div id="program-transactions-list-${programId.slice(-8)}" class="program-transactions-list">
+                        <div class="loading-transactions">
+                            <i class="fas fa-spinner fa-spin"></i> Loading program transactions...
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+        
         return `
             <div class="result-header">
                 <h4><i class="fas fa-code"></i> Program</h4>
@@ -593,6 +609,17 @@ class X1Explorer {
                 <p><strong><i class="fas fa-database"></i> Data Length:</strong> ${dataLength} bytes</p>
                 <p><strong><i class="fas fa-play"></i> Executable:</strong> <i class="fas fa-check-circle" style="color: #28a745;"></i> Yes</p>
                 <p><strong><i class="fas fa-shield-alt"></i> Rent Exempt:</strong> ${program.lamports > 0 ? '✓ Yes' : '✗ No'}</p>
+                
+                <!-- Program Transaction History -->
+                <div class="expandable-section">
+                    <h5 class="section-header" onclick="toggleProgramTransactions('${programId}')">
+                        <i class="fas fa-chevron-down toggle-icon" id="program-tx-icon-${programId.slice(-8)}"></i> 
+                        <i class="fas fa-code-branch"></i> Program Transaction History
+                    </h5>
+                    <div id="program-transactions-${programId.slice(-8)}" class="section-content">
+                        ${formatProgramTransactions()}
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -883,6 +910,29 @@ window.toggleAccountTransactions = async function(address) {
     }
 };
 
+// Global function to toggle program transactions
+window.toggleProgramTransactions = async function(programId) {
+    const programIdShort = programId.slice(-8);
+    const content = document.getElementById(`program-transactions-${programIdShort}`);
+    const icon = document.getElementById(`program-tx-icon-${programIdShort}`);
+    const transactionsList = document.getElementById(`program-transactions-list-${programIdShort}`);
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        // Expand and load transactions
+        content.style.display = 'block';
+        icon.className = 'fas fa-chevron-up toggle-icon';
+        
+        // Load first page of transactions if not loaded yet
+        if (transactionsList.innerHTML.includes('Loading program transactions...')) {
+            await loadProgramTransactions(programId, 1);
+        }
+    } else {
+        // Collapse
+        content.style.display = 'none';
+        icon.className = 'fas fa-chevron-down toggle-icon';
+    }
+};
+
 // Function to load account transactions with pagination
 async function loadAccountTransactions(address, page = 1, pageSize = 20) {
     const addressShort = address.slice(-8);
@@ -1023,6 +1073,150 @@ function generateAccountTransactionPagination(address, currentPage, hasMore) {
 
 // Make loadAccountTransactions globally accessible
 window.loadAccountTransactions = loadAccountTransactions;
+
+// Function to load program transactions with pagination
+async function loadProgramTransactions(programId, page = 1, pageSize = 20) {
+    const programIdShort = programId.slice(-8);
+    const transactionsList = document.getElementById(`program-transactions-list-${programIdShort}`);
+    const paginationContainer = document.getElementById(`program-tx-pagination-${programIdShort}`);
+    
+    try {
+        // Show loading
+        transactionsList.innerHTML = `
+            <div class="loading-transactions">
+                <i class="fas fa-spinner fa-spin"></i> Loading program transactions page ${page}...
+            </div>
+        `;
+        
+        // Calculate offset for pagination
+        const before = page > 1 ? window.programTransactionCache?.[programId]?.[(page - 1) * pageSize - 1]?.signature : undefined;
+        
+        // Get transaction signatures for the program
+        const signatures = await rpc.getSignaturesForAddress(programId, {
+            limit: pageSize,
+            before: before
+        });
+        
+        if (signatures.length === 0) {
+            transactionsList.innerHTML = '<p><i class="fas fa-info-circle"></i> No transactions found for this program</p>';
+            paginationContainer.innerHTML = '';
+            return;
+        }
+        
+        // Store in cache for pagination
+        if (!window.programTransactionCache) window.programTransactionCache = {};
+        if (!window.programTransactionCache[programId]) window.programTransactionCache[programId] = [];
+        
+        // Add to cache
+        const startIndex = (page - 1) * pageSize;
+        signatures.forEach((sig, index) => {
+            window.programTransactionCache[programId][startIndex + index] = sig;
+        });
+        
+        // Generate transaction list HTML
+        const transactionsHTML = signatures.map((sig, index) => {
+            const globalIndex = (page - 1) * pageSize + index;
+            const status = sig.err ? 'Failed' : 'Success';
+            const statusClass = sig.err ? 'tx-failed' : 'tx-success';
+            const blockTime = sig.blockTime ? new Date(sig.blockTime * 1000).toLocaleString('en-US') : 'Unknown';
+            const signature = sig.signature;
+            
+            return `
+                <div class="program-transaction-item" data-signature="${signature}">
+                    <div class="transaction-header">
+                        <div class="transaction-signature">
+                            <span class="tx-index">#${globalIndex + 1}</span>
+                            <i class="fas fa-code-branch"></i>
+                            <code class="signature-short" title="${signature}">${signature.slice(0, 8)}...${signature.slice(-8)}</code>
+                            <button class="copy-btn" onclick="copyToClipboard('${signature}')" title="Copy full signature">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <span class="transaction-status ${statusClass}">
+                            <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
+                        </span>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="detail-item">
+                            <i class="fas fa-clock"></i> Time: <strong>${blockTime}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-layer-group"></i> Slot: <strong>${sig.slot || 'N/A'}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-code"></i> Program Interaction
+                        </div>
+                        ${sig.err ? `<div class="detail-item error-detail">
+                            <i class="fas fa-exclamation-triangle"></i> Error: <strong>${JSON.stringify(sig.err)}</strong>
+                        </div>` : ''}
+                        <div class="detail-item">
+                            <button class="view-tx-btn" onclick="searchTransaction('${signature}')">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Update transactions list
+        transactionsList.innerHTML = transactionsHTML;
+        
+        // Generate pagination controls
+        const hasMore = signatures.length === pageSize; // Assume there might be more if we got a full page
+        generateProgramTransactionPagination(programId, page, hasMore);
+        
+    } catch (error) {
+        console.error('Failed to load program transactions:', error);
+        transactionsList.innerHTML = `
+            <p class="error-message">
+                <i class="fas fa-exclamation-triangle"></i> 
+                Failed to load program transactions: ${error.message}
+            </p>
+        `;
+        paginationContainer.innerHTML = '';
+    }
+}
+
+// Generate pagination controls for program transactions
+function generateProgramTransactionPagination(programId, currentPage, hasMore) {
+    const programIdShort = programId.slice(-8);
+    const paginationContainer = document.getElementById(`program-tx-pagination-${programIdShort}`);
+    
+    if (currentPage === 1 && !hasMore) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '<div class="pagination-controls">';
+    
+    // Previous button
+    if (currentPage > 1) {
+        paginationHTML += `
+            <button onclick="loadProgramTransactions('${programId}', ${currentPage - 1})" class="pagination-btn">
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+        `;
+    }
+    
+    // Current page indicator
+    paginationHTML += `<span class="pagination-info">Page ${currentPage}</span>`;
+    
+    // Next button
+    if (hasMore) {
+        paginationHTML += `
+            <button onclick="loadProgramTransactions('${programId}', ${currentPage + 1})" class="pagination-btn">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+    }
+    
+    paginationHTML += '</div>';
+    paginationContainer.innerHTML = paginationHTML;
+}
+
+// Make loadProgramTransactions globally accessible
+window.loadProgramTransactions = loadProgramTransactions;
 
 // Initialize application after page load
 document.addEventListener('DOMContentLoaded', () => {
