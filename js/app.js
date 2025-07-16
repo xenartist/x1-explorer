@@ -139,6 +139,13 @@ class X1Explorer {
         results.forEach(result => {
             const resultElement = this.createResultElement(result);
             resultContent.appendChild(resultElement);
+            
+            // If this is an account result and it's a vote account, load vote info
+            if (result.type === 'account' && 
+                result.data.value && 
+                result.data.value.owner === 'Vote111111111111111111111111111111111111111') {
+                this.loadVoteAccountInfo(result.query);
+            }
         });
 
         resultsDiv.classList.remove('hidden');
@@ -520,6 +527,7 @@ class X1Explorer {
         }
 
         const balance = accountData.lamports / 1e9; // Convert to SOL
+        const isVoteAccount = accountData.owner === 'Vote111111111111111111111111111111111111111';
         
         // Format account transactions list
         const formatAccountTransactions = () => {
@@ -548,6 +556,15 @@ class X1Explorer {
                 <p><strong><i class="fas fa-database"></i> Data Length:</strong> ${accountData.data ? accountData.data[0].length : 0} bytes</p>
                 <p><strong><i class="fas fa-play"></i> Executable:</strong> ${accountData.executable ? '✓ Yes' : '✗ No'}</p>
                 <p><strong><i class="fas fa-shield-alt"></i> Rent Exempt:</strong> ${accountData.lamports > 0 ? '✓ Yes' : '✗ No'}</p>
+                
+                <!-- Vote Account Information (only for vote accounts) -->
+                ${isVoteAccount ? `
+                <div id="vote-info-${address.slice(-8)}" class="vote-account-section">
+                    <div class="loading-vote-info">
+                        <i class="fas fa-spinner fa-spin"></i> Loading vote account information...
+                    </div>
+                </div>
+                ` : ''}
                 
                 <!-- Account Transactions List -->
                 <div class="expandable-section">
@@ -807,6 +824,50 @@ class X1Explorer {
                 document.body.removeChild(notification);
             }, 300);
         }, 2000);
+    }
+
+    // Move this function inside the X1Explorer class (before the last closing brace)
+    async loadVoteAccountInfo(address) {
+        try {
+            const voteInfo = await rpc.getVoteAccountCredits(address);
+            if (voteInfo) {
+                const voteSection = document.getElementById(`vote-info-${address.slice(-8)}`);
+                if (voteSection) {
+                    // Calculate total credits from epochCredits array
+                    const totalCredits = voteInfo.epochCredits ? 
+                        voteInfo.epochCredits[voteInfo.epochCredits.length - 1]?.[1] || 0 : 0;
+                    
+                    voteSection.innerHTML = `
+                        <div class="vote-account-info">
+                            <h5><i class="fas fa-vote-yea"></i> Vote Account Information</h5>
+                            <div class="vote-details">
+                                <p><strong><i class="fas fa-chart-line"></i> Credits:</strong> ${totalCredits}</p>
+                                <p><strong><i class="fas fa-user-tie"></i> Vote Authority:</strong> <code>${voteInfo.nodePubkey || 'N/A'}</code></p>
+                                <p><strong><i class="fas fa-percentage"></i> Commission:</strong> ${voteInfo.commission || 0}%</p>
+                                <p><strong><i class="fas fa-toggle-on"></i> Active:</strong> ${voteInfo.activatedStake > 0 ? 'Yes' : 'No'}</p>
+                                <p><strong><i class="fas fa-coins"></i> Activated Stake:</strong> ${(voteInfo.activatedStake / 1e9).toFixed(2)} SOL</p>
+                                ${voteInfo.lastVote ? `<p><strong><i class="fas fa-clock"></i> Last Vote:</strong> ${voteInfo.lastVote}</p>` : ''}
+                                ${voteInfo.rootSlot ? `<p><strong><i class="fas fa-layer-group"></i> Root Slot:</strong> ${voteInfo.rootSlot}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load vote account information:', error);
+            const voteSection = document.getElementById(`vote-info-${address.slice(-8)}`);
+            if (voteSection) {
+                voteSection.innerHTML = `
+                    <div class="vote-account-info">
+                        <h5><i class="fas fa-vote-yea"></i> Vote Account Information</h5>
+                        <p class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Failed to load vote account details: ${error.message}
+                        </p>
+                    </div>
+                `;
+            }
+        }
     }
 }
 

@@ -343,6 +343,26 @@ class X1RPC {
         
         return transactions;
     }
+
+    // Get vote account credits (only call when we know it's a vote account)
+    async getVoteAccountCredits(votePubkey) {
+        try {
+            const voteAccounts = await this.call('getVoteAccounts', [{
+                votePubkey: votePubkey
+            }]);
+            if (voteAccounts && voteAccounts.current && voteAccounts.current.length > 0) {
+                return voteAccounts.current[0];
+            }
+            // Also check delinquent accounts
+            if (voteAccounts && voteAccounts.delinquent && voteAccounts.delinquent.length > 0) {
+                return voteAccounts.delinquent[0];
+            }
+            return null;
+        } catch (error) {
+            console.error('Failed to get vote account credits:', error);
+            throw error;
+        }
+    }
 }
 
 // Create RPC instance
