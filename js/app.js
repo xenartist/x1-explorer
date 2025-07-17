@@ -126,13 +126,11 @@ class X1Explorer {
         const resultContent = document.getElementById('resultContent');
         const resultType = document.getElementById('resultType');
 
-        // Show all results without filtering
         if (results.length === 0) {
             this.showError('No matching results found');
             return;
         }
 
-        // Set result type based on the first result
         resultType.textContent = this.getTypeLabel(results[0].type);
         resultContent.innerHTML = '';
 
@@ -140,11 +138,14 @@ class X1Explorer {
             const resultElement = this.createResultElement(result);
             resultContent.appendChild(resultElement);
             
-            // If this is an account result and it's a vote account, load vote info
-            if (result.type === 'account' && 
-                result.data.value && 
-                result.data.value.owner === 'Vote111111111111111111111111111111111111111') {
-                this.loadVoteAccountInfo(result.query);
+            // Check account type and load additional info
+            if (result.type === 'account' && result.data.value) {
+                const owner = result.data.value.owner;
+                if (owner === 'Vote111111111111111111111111111111111111111') {
+                    this.loadVoteAccountInfo(result.query);
+                } else if (owner === 'Stake11111111111111111111111111111111111111') {
+                    this.loadStakeAccountInfo(result.query);
+                }
             }
         });
 
@@ -526,8 +527,9 @@ class X1Explorer {
             `;
         }
 
-        const balance = accountData.lamports / 1e9; // Convert to SOL
+        const balance = accountData.lamports / 1e9;
         const isVoteAccount = accountData.owner === 'Vote111111111111111111111111111111111111111';
+        const isStakeAccount = accountData.owner === 'Stake11111111111111111111111111111111111111';
         
         // Format account transactions list
         const formatAccountTransactions = () => {
@@ -557,11 +559,20 @@ class X1Explorer {
                 <p><strong><i class="fas fa-play"></i> Executable:</strong> ${accountData.executable ? '✓ Yes' : '✗ No'}</p>
                 <p><strong><i class="fas fa-shield-alt"></i> Rent Exempt:</strong> ${accountData.lamports > 0 ? '✓ Yes' : '✗ No'}</p>
                 
-                <!-- Vote Account Information (only for vote accounts) -->
+                <!-- Vote Account Information -->
                 ${isVoteAccount ? `
                 <div id="vote-info-${address.slice(-8)}" class="vote-account-section">
                     <div class="loading-vote-info">
                         <i class="fas fa-spinner fa-spin"></i> Loading vote account information...
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Stake Account Information -->
+                ${isStakeAccount ? `
+                <div id="stake-info-${address.slice(-8)}" class="stake-account-section">
+                    <div class="loading-stake-info">
+                        <i class="fas fa-spinner fa-spin"></i> Loading stake account information...
                     </div>
                 </div>
                 ` : ''}
@@ -863,6 +874,68 @@ class X1Explorer {
                         <p class="error-message">
                             <i class="fas fa-exclamation-triangle"></i> 
                             Failed to load vote account details: ${error.message}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Add new method to load stake account info
+    async loadStakeAccountInfo(address) {
+        try {
+            const stakeInfo = await rpc.getStakeAccountInfo(address);
+            if (stakeInfo) {
+                const stakeSection = document.getElementById(`stake-info-${address.slice(-8)}`);
+                if (stakeSection) {
+                    const delegation = stakeInfo.stakeData.stake?.delegation;
+                    const meta = stakeInfo.stakeData.meta;
+                    
+                    stakeSection.innerHTML = `
+                        <div class="stake-account-info">
+                            <h5><i class="fas fa-lock"></i> Stake Account Information</h5>
+                            <div class="stake-details">
+                                <!-- Row 1: Status and Delegation Info -->
+                                <div class="stake-row">
+                                    <p><strong><i class="fas fa-info-circle"></i> State:</strong> ${stakeInfo.state}</p>
+                                    ${delegation ? `
+                                        <p><strong><i class="fas fa-vote-yea"></i> Delegated To:</strong> <code>${delegation.voter}</code></p>
+                                        <p><strong><i class="fas fa-coins"></i> Delegated Amount:</strong> ${(delegation.stake / 1e9).toFixed(9)} SOL</p>
+                                    ` : '<p><strong><i class="fas fa-info-circle"></i> Status:</strong> Not delegated</p>'}
+                                </div>
+                                
+                                <!-- Row 2: Epoch Information -->
+                                <div class="stake-row">
+                                    ${delegation ? `
+                                        <p><strong><i class="fas fa-clock"></i> Activation Epoch:</strong> ${delegation.activationEpoch}</p>
+                                        <p><strong><i class="fas fa-clock"></i> Deactivation Epoch:</strong> ${delegation.deactivationEpoch === BigInt(18446744073709551615) ? 'None' : delegation.deactivationEpoch}</p>
+                                        <p><strong><i class="fas fa-history"></i> Current Epoch:</strong> ${stakeInfo.currentEpoch}</p>
+                                    ` : ''}
+                                </div>
+                                
+                                <!-- Row 3: Authorization and Lockup -->
+                                <div class="stake-row">
+                                    ${meta ? `
+                                        <p><strong><i class="fas fa-user"></i> Authorized Staker:</strong> <code>${meta.authorized.staker}</code></p>
+                                        <p><strong><i class="fas fa-key"></i> Authorized Withdrawer:</strong> <code>${meta.authorized.withdrawer}</code></p>
+                                        <p><strong><i class="fas fa-lock"></i> Lockup Epoch:</strong> ${meta.lockup.epoch}</p>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load stake account information:', error);
+            const stakeSection = document.getElementById(`stake-info-${address.slice(-8)}`);
+            if (stakeSection) {
+                stakeSection.innerHTML = `
+                    <div class="stake-account-info">
+                        <h5><i class="fas fa-lock"></i> Stake Account Information</h5>
+                        <p class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Failed to load stake account details: ${error.message}
                         </p>
                     </div>
                 `;

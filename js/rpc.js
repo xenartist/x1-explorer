@@ -363,6 +363,58 @@ class X1RPC {
             throw error;
         }
     }
+
+    // Get stake account information
+    async getStakeAccountInfo(stakePubkey) {
+        try {
+            // Use getAccountInfo to get raw account data
+            const accountInfo = await this.call('getAccountInfo', [stakePubkey, {
+                encoding: 'jsonParsed',
+                commitment: 'confirmed'
+            }]);
+
+            // Get current epoch information
+            const epochInfo = await this.call('getEpochInfo');
+            
+            if (!accountInfo?.value?.data?.parsed?.type === 'stake') {
+                throw new Error('Not a valid stake account');
+            }
+
+            // Get stake account details
+            const stakeData = accountInfo.value.data.parsed.info;
+            const delegation = stakeData.stake?.delegation;
+            
+            // Calculate stake status
+            let state = 'inactive';
+            if (delegation) {
+                const activationEpoch = delegation.activationEpoch;
+                const deactivationEpoch = delegation.deactivationEpoch;
+                const currentEpoch = epochInfo.epoch;
+
+                if (deactivationEpoch !== BigInt(18446744073709551615)) { // max u64
+                    if (currentEpoch >= deactivationEpoch) {
+                        state = 'inactive';
+                    } else if (currentEpoch >= activationEpoch) {
+                        state = 'deactivating';
+                    }
+                } else if (currentEpoch >= activationEpoch) {
+                    state = 'active';
+                } else {
+                    state = 'activating';
+                }
+            }
+
+            return {
+                state,
+                accountInfo: accountInfo.value,
+                stakeData,
+                currentEpoch: epochInfo.epoch
+            };
+        } catch (error) {
+            console.error('Failed to get stake account info:', error);
+            throw error;
+        }
+    }
 }
 
 // Create RPC instance
