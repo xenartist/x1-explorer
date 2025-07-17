@@ -384,19 +384,20 @@ class X1RPC {
             const stakeData = accountInfo.value.data.parsed.info;
             const delegation = stakeData.stake?.delegation;
             
-            // Calculate stake status
+            // Fix stake status calculation logic
             let state = 'inactive';
             if (delegation) {
-                const activationEpoch = delegation.activationEpoch;
-                const deactivationEpoch = delegation.deactivationEpoch;
-                const currentEpoch = epochInfo.epoch;
+                const activationEpoch = Number(delegation.activationEpoch);
+                const deactivationEpoch = Number(delegation.deactivationEpoch);
+                const currentEpoch = Number(epochInfo.epoch);
+                
+                // Max u64 means no deactivation epoch
+                const MAX_EPOCH = 18446744073709551615;
 
-                if (deactivationEpoch !== BigInt(18446744073709551615)) { // max u64
-                    if (currentEpoch >= deactivationEpoch) {
-                        state = 'inactive';
-                    } else if (currentEpoch >= activationEpoch) {
-                        state = 'deactivating';
-                    }
+                if (deactivationEpoch !== MAX_EPOCH && deactivationEpoch <= currentEpoch) {
+                    state = 'inactive';
+                } else if (deactivationEpoch !== MAX_EPOCH && currentEpoch < deactivationEpoch) {
+                    state = 'deactivating';
                 } else if (currentEpoch >= activationEpoch) {
                     state = 'active';
                 } else {
