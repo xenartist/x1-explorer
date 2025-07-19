@@ -146,6 +146,9 @@ class X1Explorer {
                 } else if (owner === 'Stake11111111111111111111111111111111111111') {
                     this.loadStakeAccountInfo(result.query);
                 }
+            } else if (result.type === 'token') {
+                // Load token metadata
+                this.loadTokenMetadata(result.query);
             }
         });
 
@@ -663,6 +666,13 @@ class X1Explorer {
                 <p><strong><i class="fas fa-chart-line"></i> Total Supply:</strong> ${token.value?.uiAmount || 'N/A'}</p>
                 <p><strong><i class="fas fa-decimal"></i> Decimals:</strong> ${token.value?.decimals || 'N/A'}</p>
                 <p><strong><i class="fas fa-hashtag"></i> Raw Amount:</strong> ${token.value?.amount || 'N/A'}</p>
+                
+                <!-- Token Metadata Section -->
+                <div id="token-metadata-${mint.slice(-8)}" class="token-metadata-section">
+                    <div class="loading-token-metadata">
+                        <i class="fas fa-spinner fa-spin"></i> Loading token metadata...
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -936,6 +946,92 @@ class X1Explorer {
                         <p class="error-message">
                             <i class="fas fa-exclamation-triangle"></i> 
                             Failed to load stake account details: ${error.message}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Add method to load token metadata
+    async loadTokenMetadata(mintAddress) {
+        try {
+            const metadata = await rpc.getTokenMetadata(mintAddress);
+            if (metadata) {
+                const metadataSection = document.getElementById(`token-metadata-${mintAddress.slice(-8)}`);
+                if (metadataSection) {
+                    metadataSection.innerHTML = `
+                        <div class="token-metadata-info">
+                            <div class="token-header">
+                                ${metadata.image ? `
+                                    <div class="token-icon">
+                                        <img src="${metadata.image}" alt="${metadata.name || 'Token'}" 
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                        <div class="token-icon-fallback" style="display: none;">
+                                            <i class="fas fa-coins"></i>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                <h5><i class="fas fa-info-circle"></i> Token Metadata</h5>
+                            </div>
+                            <div class="token-metadata-details">
+                                <!-- Row 1: Basic Info -->
+                                <div class="metadata-row">
+                                    <p><strong><i class="fas fa-tag"></i> Type:</strong> ${metadata.tokenType}</p>
+                                    ${metadata.name ? `<p><strong><i class="fas fa-signature"></i> Name:</strong> ${metadata.name}</p>` : ''}
+                                    ${metadata.symbol ? `<p><strong><i class="fas fa-font"></i> Symbol:</strong> ${metadata.symbol}</p>` : ''}
+                                </div>
+                                
+                                ${metadata.description ? `
+                                <!-- Description Row -->
+                                <div class="metadata-row">
+                                    <p class="token-description"><strong><i class="fas fa-align-left"></i> Description:</strong> ${metadata.description}</p>
+                                </div>
+                                ` : ''}
+                                
+                                <!-- Row 2: Authority Info -->
+                                <div class="metadata-row">
+                                    ${metadata.mintAuthority ? `<p><strong><i class="fas fa-key"></i> Mint Authority:</strong> <code>${metadata.mintAuthority}</code></p>` : '<p><strong><i class="fas fa-key"></i> Mint Authority:</strong> None (Fixed Supply)</p>'}
+                                    ${metadata.freezeAuthority ? `<p><strong><i class="fas fa-lock"></i> Freeze Authority:</strong> <code>${metadata.freezeAuthority}</code></p>` : '<p><strong><i class="fas fa-unlock"></i> Freeze Authority:</strong> None</p>'}
+                                </div>
+                                
+                                <!-- Row 3: Additional Info -->
+                                <div class="metadata-row">
+                                    <p><strong><i class="fas fa-toggle-on"></i> Initialized:</strong> ${metadata.isInitialized ? 'Yes' : 'No'}</p>
+                                    ${metadata.uri ? `<p><strong><i class="fas fa-link"></i> Metadata URI:</strong> <a href="${metadata.uri}" target="_blank" rel="noopener">${metadata.uri.slice(0, 50)}...</a></p>` : ''}
+                                    ${metadata.extensions ? `<p><strong><i class="fas fa-puzzle-piece"></i> Extensions:</strong> ${metadata.extensions.length} found</p>` : ''}
+                                </div>
+                                
+                                ${metadata.attributes && metadata.attributes.length > 0 ? `
+                                <!-- Attributes Row -->
+                                <div class="metadata-row">
+                                    <div class="token-attributes">
+                                        <strong><i class="fas fa-tags"></i> Attributes:</strong>
+                                        <div class="attributes-list">
+                                            ${metadata.attributes.map(attr => `
+                                                <span class="attribute-tag">
+                                                    ${attr.trait_type}: ${attr.value}
+                                                </span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load token metadata:', error);
+            const metadataSection = document.getElementById(`token-metadata-${mintAddress.slice(-8)}`);
+            if (metadataSection) {
+                metadataSection.innerHTML = `
+                    <div class="token-metadata-info">
+                        <h5><i class="fas fa-info-circle"></i> Token Metadata</h5>
+                        <p class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Failed to load token metadata: ${error.message}
                         </p>
                     </div>
                 `;
@@ -1351,6 +1447,76 @@ function generateProgramTransactionPagination(programId, currentPage, hasMore) {
 
 // Make loadProgramTransactions globally accessible
 window.loadProgramTransactions = loadProgramTransactions;
+
+// Function to load token metadata
+async function loadTokenMetadata(mintAddress) {
+    const metadataSection = document.getElementById(`token-metadata-${mintAddress.slice(-8)}`);
+    if (!metadataSection) return;
+
+    try {
+        const metadata = await rpc.getTokenMetadata(mintAddress);
+        if (metadata) {
+            let metadataHTML = '';
+            if (metadata.tokenType === 'Token-2022') {
+                metadataHTML += `
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-address-card"></i> Token ID:</strong> <code>${metadata.mintAddress}</code>
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-chart-line"></i> Total Supply:</strong> ${metadata.supply || 'N/A'}
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-decimal"></i> Decimals:</strong> ${metadata.decimals || 'N/A'}
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-hashtag"></i> Raw Amount:</strong> ${metadata.rawAmount || 'N/A'}
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-link"></i> URI:</strong> <a href="${metadata.uri || 'N/A'}" target="_blank">${metadata.uri || 'N/A'}</a>
+                    </div>
+                `;
+            } else { // SPL Token
+                metadataHTML += `
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-address-card"></i> Token ID:</strong> <code>${metadata.mintAddress}</code>
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-chart-line"></i> Total Supply:</strong> ${metadata.supply || 'N/A'}
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-decimal"></i> Decimals:</strong> ${metadata.decimals || 'N/A'}
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-hashtag"></i> Raw Amount:</strong> ${metadata.rawAmount || 'N/A'}
+                    </div>
+                    <div class="token-metadata-item">
+                        <strong><i class="fas fa-link"></i> URI:</strong> <a href="${metadata.uri || 'N/A'}" target="_blank">${metadata.uri || 'N/A'}</a>
+                    </div>
+                `;
+            }
+            metadataSection.innerHTML = metadataHTML;
+        } else {
+            metadataSection.innerHTML = `
+                <div class="token-metadata-item">
+                    <strong><i class="fas fa-address-card"></i> Token ID:</strong> <code>${mintAddress}</code>
+                </div>
+                <div class="token-metadata-item">
+                    <strong><i class="fas fa-info-circle"></i> Status:</strong> Token metadata not found or inactive
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Failed to load token metadata:', error);
+        metadataSection.innerHTML = `
+            <div class="token-metadata-item">
+                <strong><i class="fas fa-address-card"></i> Token ID:</strong> <code>${mintAddress}</code>
+            </div>
+            <div class="token-metadata-item">
+                <strong><i class="fas fa-exclamation-triangle"></i> Error:</strong> Failed to load token details: ${error.message}
+            </div>
+        `;
+    }
+}
 
 // Initialize application after page load
 document.addEventListener('DOMContentLoaded', () => {

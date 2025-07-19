@@ -1302,3 +1302,184 @@ code {
         margin: 10px 0;
     }
 }
+
+/* Token Metadata Styles */
+.token-metadata-section {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f0f9ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+}
+
+.token-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.token-icon {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.token-icon img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+}
+
+.token-icon-fallback {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 20px;
+    border: 2px solid #e5e7eb;
+}
+
+.token-metadata-info h5 {
+    color: #3b82f6;
+    margin: 0;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.token-metadata-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.metadata-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #bfdbfe;
+}
+
+.metadata-row:last-child {
+    border-bottom: none;
+}
+
+.token-metadata-details p {
+    margin: 0;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.token-description {
+    grid-column: 1 / -1;
+    word-wrap: break-word;
+}
+
+.token-metadata-details strong {
+    color: #495057;
+    min-width: 140px;
+}
+
+.token-metadata-details code {
+    font-size: 11px;
+    background-color: #e0f2fe;
+    padding: 2px 6px;
+    border-radius: 3px;
+    word-break: break-all;
+}
+
+.token-metadata-details a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.token-metadata-details a:hover {
+    text-decoration: underline;
+}
+
+.token-attributes {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.attributes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.attribute-tag {
+    background-color: #e0f2fe;
+    color: #0c4a6e;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.loading-token-metadata {
+    text-align: center;
+    padding: 10px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.loading-token-metadata i {
+    margin-right: 8px;
+}
+
+/* Responsive adjustments for token metadata */
+@media (max-width: 768px) {
+    .token-header {
+        gap: 10px;
+    }
+    
+    .token-icon,
+    .token-icon img,
+    .token-icon-fallback {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .token-icon-fallback {
+        font-size: 16px;
+    }
+    
+    .metadata-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .token-metadata-details strong {
+        min-width: 130px;
+    }
+    
+    .token-metadata-section {
+        padding: 12px;
+        margin: 10px 0;
+    }
+    
+    .attributes-list {
+        gap: 4px;
+    }
+    
+    .attribute-tag {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+}

@@ -416,6 +416,104 @@ class X1RPC {
             throw error;
         }
     }
+
+    // Get token metadata (supports both SPL Token and Token-2022)
+    async getTokenMetadata(mintAddress) {
+        try {
+            // First check if it's a Token-2022 with metadata extension
+            const mintInfo = await this.call('getAccountInfo', [mintAddress, {
+                encoding: 'jsonParsed',
+                commitment: 'confirmed'
+            }]);
+
+            if (!mintInfo?.value) {
+                throw new Error('Token mint not found');
+            }
+
+            const mintData = mintInfo.value.data.parsed?.info;
+            let metadata = {
+                mintAuthority: mintData?.mintAuthority,
+                freezeAuthority: mintData?.freezeAuthority,
+                decimals: mintData?.decimals,
+                supply: mintData?.supply,
+                isInitialized: mintData?.isInitialized,
+                extensions: null
+            };
+
+            // Check for Token-2022 extensions
+            if (mintInfo.value.data.parsed?.info?.extensions) {
+                metadata.extensions = mintInfo.value.data.parsed.info.extensions;
+                
+                // Look for metadata extension in Token-2022
+                const metadataExtension = metadata.extensions.find(ext => ext.extension === 'tokenMetadata');
+                if (metadataExtension) {
+                    metadata.name = metadataExtension.state.name;
+                    metadata.symbol = metadataExtension.state.symbol;
+                    metadata.uri = metadataExtension.state.uri;
+                    metadata.tokenType = 'Token-2022';
+                    
+                    // Fetch additional metadata from URI if available
+                    if (metadata.uri) {
+                        try {
+                            const response = await fetch(metadata.uri);
+                            const jsonMetadata = await response.json();
+                            metadata.image = jsonMetadata.image;
+                            metadata.description = jsonMetadata.description;
+                            metadata.attributes = jsonMetadata.attributes;
+                        } catch (e) {
+                            console.log('Failed to fetch URI metadata:', e.message);
+                        }
+                    }
+                    
+                    return metadata;
+                }
+            }
+
+            // If no Token-2022 metadata, try to find Metaplex metadata
+            try {
+                // Calculate metadata PDA for Metaplex
+                const metadataPDA = await this.findMetadataPDA(mintAddress);
+                const metadataAccount = await this.call('getAccountInfo', [metadataPDA, {
+                    encoding: 'base64',
+                    commitment: 'confirmed'
+                }]);
+
+                if (metadataAccount?.value) {
+                    // Parse Metaplex metadata (simplified parsing)
+                    metadata.tokenType = 'SPL Token';
+                    metadata.hasMetaplex = true;
+                    
+                    // Try to get off-chain metadata
+                    // Note: This is a simplified approach. In practice, you'd need to properly parse the Metaplex metadata account
+                    // For now, we'll attempt some common metadata URIs
+                    const commonUris = [
+                        `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${mintAddress}/logo.png`,
+                        `https://arweave.net/...` // You'd need the actual Arweave URI from the metadata account
+                    ];
+                    
+                    // This is a placeholder - in a real implementation you'd parse the actual metadata account
+                }
+            } catch (e) {
+                console.log('No Metaplex metadata found:', e.message);
+            }
+
+            metadata.tokenType = metadata.tokenType || 'SPL Token';
+            return metadata;
+
+        } catch (error) {
+            console.error('Failed to get token metadata:', error);
+            throw error;
+        }
+    }
+
+    // Helper to calculate Metaplex metadata PDA
+    async findMetadataPDA(mintAddress) {
+        // This is a simplified version - in practice you'd use @solana/web3.js PublicKey.findProgramAddressSync
+        // For now, we'll return a placeholder
+        const METADATA_PROGRAM_ID = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s';
+        // In a real implementation, you'd calculate the PDA properly
+        return `${METADATA_PROGRAM_ID}_${mintAddress}_metadata`;
+    }
 }
 
 // Create RPC instance
