@@ -1600,28 +1600,28 @@ code {
 
 /* Transaction details container - horizontal layout */
 .transaction-details {
-    padding: 8px 15px 15px;
+    padding: 0 15px 0;
     background-color: white;
     display: flex;
     flex-direction: row;
-    gap: 15px;
+    gap: 8px;
     align-items: flex-start;
+    justify-content: flex-start;
 }
 
-/* Time info group - compact and fixed on the left */
 .time-info-group {
     background-color: #f8f9fa;
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 4px 8px;
     border-left: 3px solid #6c757d;
     min-width: 180px;
-    max-width: 220px;
+    max-width: 400px;
     width: fit-content;
     flex-shrink: 0;
 }
 
 .time-info-group .detail-item {
-    margin: 3px 0;
+    margin: 0;
     font-size: 13px;
     white-space: nowrap;
 }
@@ -1634,14 +1634,14 @@ code {
 .memo-item {
     background-color: #f8f9fa;
     border-left: 3px solid #28a745;
-    padding: 12px 15px;
+    padding: 4px 8px;
     border-radius: 0 6px 6px 0;
     flex: 1;
     min-width: 0;
     line-height: 1.5;
     display: flex;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
 }
 
 .memo-item .memo-label {
@@ -1675,7 +1675,7 @@ code {
 
 /* General detail item styling */
 .detail-item {
-    margin: 2px 0;
+    margin: 0;
 }
 
 /* Program Interaction tag styling */
@@ -1716,4 +1716,14 @@ code {
     max-width: 220px; 
     width: fit-content;
     flex-shrink: 0;
+}
+
+.transaction-details:has(.time-info-group):not(:has(.memo-item)) .time-info-group {
+    max-width: 100%;
+    width: 100%;
+}
+
+.transaction-details-single .time-info-group {
+    max-width: 100%;
+    width: 100%;
 }
