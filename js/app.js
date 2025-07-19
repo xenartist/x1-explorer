@@ -1210,10 +1210,23 @@ async function loadAccountTransactions(address, page = 1, pageSize = 20) {
             const blockTime = sig.blockTime ? new Date(sig.blockTime * 1000).toLocaleString('en-US') : 'Unknown';
             const signature = sig.signature;
             
+            // Memo display (improved structure to prevent label wrapping)
+            const memoDisplay = (sig.memo !== null && sig.memo !== undefined && sig.memo !== '') ? `
+                <div class="memo-item">
+                    <div class="memo-label">
+                        <i class="fas fa-sticky-note"></i>
+                        Memo:
+                    </div>
+                    <div class="memo-content">
+                        <strong>${sig.memo}</strong>
+                    </div>
+                </div>
+            ` : '';
+            
             return `
                 <div class="account-transaction-item" data-signature="${signature}">
                     <div class="transaction-header">
-                        <div class="transaction-signature">
+                        <div class="transaction-left">
                             <span class="tx-index">#${globalIndex + 1}</span>
                             <i class="fas fa-receipt"></i>
                             <code class="signature-short" title="${signature}">${signature.slice(0, 8)}...${signature.slice(-8)}</code>
@@ -1221,26 +1234,34 @@ async function loadAccountTransactions(address, page = 1, pageSize = 20) {
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
-                        <span class="transaction-status ${statusClass}">
-                            <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
-                        </span>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="detail-item">
-                            <i class="fas fa-clock"></i> Time: <strong>${blockTime}</strong>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-layer-group"></i> Slot: <strong>${sig.slot || 'N/A'}</strong>
-                        </div>
-                        ${sig.err ? `<div class="detail-item error-detail">
-                            <i class="fas fa-exclamation-triangle"></i> Error: <strong>${JSON.stringify(sig.err)}</strong>
-                        </div>` : ''}
-                        <div class="detail-item">
+                        <div class="transaction-right">
                             <button class="view-tx-btn" onclick="searchTransaction('${signature}')">
                                 <i class="fas fa-eye"></i> View Details
                             </button>
+                            <span class="transaction-status ${statusClass}">
+                                <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
+                            </span>
                         </div>
                     </div>
+                    <div class="transaction-details">
+                        <!-- Time info group - only time and slot -->
+                        <div class="time-info-group">
+                            <div class="detail-item">
+                                <i class="fas fa-clock"></i> Time: <strong>${blockTime}</strong>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-layer-group"></i> Slot: <strong>${sig.slot || 'N/A'}</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Memo on the right -->
+                        ${memoDisplay}
+                    </div>
+                    
+                    <!-- Error display in separate row if exists -->
+                    ${sig.err ? `<div class="error-detail">
+                        <i class="fas fa-exclamation-triangle"></i> Error: <strong>${JSON.stringify(sig.err)}</strong>
+                    </div>` : ''}
                 </div>
             `;
         }).join('');
@@ -1249,7 +1270,7 @@ async function loadAccountTransactions(address, page = 1, pageSize = 20) {
         transactionsList.innerHTML = transactionsHTML;
         
         // Generate pagination controls
-        const hasMore = signatures.length === pageSize; // Assume there might be more if we got a full page
+        const hasMore = signatures.length === pageSize;
         generateAccountTransactionPagination(address, page, hasMore);
         
     } catch (error) {
@@ -1351,40 +1372,62 @@ async function loadProgramTransactions(programId, page = 1, pageSize = 20) {
             const blockTime = sig.blockTime ? new Date(sig.blockTime * 1000).toLocaleString('en-US') : 'Unknown';
             const signature = sig.signature;
             
+            // Memo display (improved structure to prevent label wrapping)
+            const memoDisplay = (sig.memo !== null && sig.memo !== undefined && sig.memo !== '') ? `
+                <div class="memo-item">
+                    <div class="memo-label">
+                        <i class="fas fa-sticky-note"></i>
+                        Memo:
+                    </div>
+                    <div class="memo-content">
+                        <strong>${sig.memo}</strong>
+                    </div>
+                </div>
+            ` : '';
+            
             return `
                 <div class="program-transaction-item" data-signature="${signature}">
                     <div class="transaction-header">
-                        <div class="transaction-signature">
+                        <div class="transaction-left">
                             <span class="tx-index">#${globalIndex + 1}</span>
                             <i class="fas fa-code-branch"></i>
                             <code class="signature-short" title="${signature}">${signature.slice(0, 8)}...${signature.slice(-8)}</code>
                             <button class="copy-btn" onclick="copyToClipboard('${signature}')" title="Copy full signature">
                                 <i class="fas fa-copy"></i>
                             </button>
+                            <!-- Program Interaction tag moved here -->
+                            <span class="program-interaction-tag">
+                                <i class="fas fa-code"></i> Program Interaction
+                            </span>
                         </div>
-                        <span class="transaction-status ${statusClass}">
-                            <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
-                        </span>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="detail-item">
-                            <i class="fas fa-clock"></i> Time: <strong>${blockTime}</strong>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-layer-group"></i> Slot: <strong>${sig.slot || 'N/A'}</strong>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-code"></i> Program Interaction
-                        </div>
-                        ${sig.err ? `<div class="detail-item error-detail">
-                            <i class="fas fa-exclamation-triangle"></i> Error: <strong>${JSON.stringify(sig.err)}</strong>
-                        </div>` : ''}
-                        <div class="detail-item">
+                        <div class="transaction-right">
                             <button class="view-tx-btn" onclick="searchTransaction('${signature}')">
                                 <i class="fas fa-eye"></i> View Details
                             </button>
+                            <span class="transaction-status ${statusClass}">
+                                <i class="fas fa-${status === 'Success' ? 'check-circle' : 'times-circle'}"></i> ${status}
+                            </span>
                         </div>
                     </div>
+                    <div class="transaction-details">
+                        <!-- Time info group - only time and slot -->
+                        <div class="time-info-group">
+                            <div class="detail-item">
+                                <i class="fas fa-clock"></i> Time: <strong>${blockTime}</strong>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-layer-group"></i> Slot: <strong>${sig.slot || 'N/A'}</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Memo on the right -->
+                        ${memoDisplay}
+                    </div>
+                    
+                    <!-- Error display in separate row if exists -->
+                    ${sig.err ? `<div class="error-detail">
+                        <i class="fas fa-exclamation-triangle"></i> Error: <strong>${JSON.stringify(sig.err)}</strong>
+                    </div>` : ''}
                 </div>
             `;
         }).join('');
@@ -1393,7 +1436,7 @@ async function loadProgramTransactions(programId, page = 1, pageSize = 20) {
         transactionsList.innerHTML = transactionsHTML;
         
         // Generate pagination controls
-        const hasMore = signatures.length === pageSize; // Assume there might be more if we got a full page
+        const hasMore = signatures.length === pageSize;
         generateProgramTransactionPagination(programId, page, hasMore);
         
     } catch (error) {
@@ -1532,5 +1575,3 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
 });
-
-
